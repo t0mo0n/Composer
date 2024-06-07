@@ -1,0 +1,17 @@
+<RCC>
+    <qresource prefix="/music"/>
+    <qresource prefix="/img">
+        <file>resource/EntranceBackground.png</file>
+        <file>resource/Icon.png</file>
+        <file>resource/Info.png</file>
+        <file>resource/Shop_playScene.png</file>
+        <file>resource/musicSoundTrack.png</file>
+        <file>resource/Shop_enterScene.png</file>
+        <file>resource/Help_playScene.png</file>
+        <file>resource/Help_enterScene.png</file>
+        <file>resource/Save_eS.png</file>
+        <file>resource/Save_pS.png</file>
+        <file>resource/start.png</file>
+        <file>resource/NewGame.png</file>
+    </qresource>
+</RCC>
