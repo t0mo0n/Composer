@@ -3,9 +3,14 @@
 
 #define SH_WIDTH 640
 #define SH_HEIGHT 420
+#define PRICE_1 1000
+#define PRICE_2 500
+#define PRICE_3 2000
+#define PRICE_4 50
 
 #include "ui_Shop.h"
 #include <QDialog>
+
 
 QT_BEGIN_NAMESPACE
 namespace Ui {
@@ -17,15 +22,24 @@ class Shop : public QDialog
 {
     Q_OBJECT
 public:
-    Shop(QWidget *parent = nullptr);
+    Shop(QWidget *parent = nullptr, bool inGame = false);
     ~Shop();
 protected:
     void paintEvent(QPaintEvent *event) override;
+    void changeStyleSheet(QToolButton *btn);
+    void displayText();
+
+private slots:
+    void on_ctUpdateBtn_clicked();
+    void on_bnUpdateBtn_clicked();
+    void on_nvUpdateBtn_clicked();
+    void on_smShopBtn_clicked();
 
 private:
     Ui::Shop *ui;
 
     QPainter *shopPainter;
+    bool inGame_;
 };
 
 #endif // SHOP_H

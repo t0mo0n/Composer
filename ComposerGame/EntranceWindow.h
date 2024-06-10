@@ -7,6 +7,9 @@
 #include <QWidget>
 #include <QLabel>
 #include <QToolButton>
+#include "GlobalState.h"
+#include "Shop.h"
+#include "PlayWindow.h"
 
 QT_BEGIN_NAMESPACE
 namespace Ui {
@@ -19,20 +22,27 @@ class EntranceWindow : public QWidget
     Q_OBJECT
 
 public:
+    static GlobalState globalState_;
+
     EntranceWindow(QWidget *parent = nullptr);
-    void changeStyleSheet(QToolButton *btn);
     ~EntranceWindow();
 
 protected:
     void paintEvent(QPaintEvent *event) override;
-    void displayText();
 
 private slots:
     void on_ShopButton__clicked();
+    void on_StartButton__clicked();
+    void on_PlayWindowClosed();
 
 private:
-    Ui::EntranceWindow *ui;
+    void changeStyleSheet(QToolButton *btn);
+    void displayText();
 
+    Ui::EntranceWindow *ui;
     QPainter* entrancePainter;
+
+    PlayWindow *playWindow_;
+    Shop *shopWindow_;
 };
 #endif // ENTRANCEWINDOW_H
