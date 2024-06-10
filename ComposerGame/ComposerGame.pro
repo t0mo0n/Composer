@@ -9,17 +9,26 @@ CONFIG += c++17
 #DEFINES += QT_DISABLE_DEPRECATED_BEFORE=0x060000    # disables all the APIs deprecated before Qt 6.0.0
 
 SOURCES += \
+    Congratulation.cpp \
+    GlobalState.cpp \
+    Infomation.cpp \
+    PlayWindow.cpp \
     Shop.cpp \
     main.cpp \
     EntranceWindow.cpp
 
 HEADERS += \
+    Congratulation.h \
     EntranceWindow.h \
     GlobalState.h \
+    Infomation.h \
+    PlayWindow.h \
     Shop.h
 
 FORMS += \
+    Congratulation.ui \
     EntranceWindow.ui \
+    PlayWindow.ui \
     Shop.ui
 
 # Default rules for deployment.

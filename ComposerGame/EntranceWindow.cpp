@@ -4,8 +4,6 @@
 #include <QLabel>
 #include<QDebug>
 #include <QFontDatabase>
-#include "GlobalState.h"
-#include "Shop.h"
 
 EntranceWindow::EntranceWindow(QWidget *parent)
     : QWidget(parent)
@@ -17,6 +15,8 @@ EntranceWindow::EntranceWindow(QWidget *parent)
     this->setWindowTitle("Composer~Welcome!");
     this->setFixedSize(EW_WIDTH,EW_HEIGHT);
 
+    globalState_ = GlobalState(); // 初始化全局状态，后续可能要修改为依靠配置文件改变全局状态
+
     entrancePainter = new QPainter();
 
     displayText();
@@ -26,13 +26,6 @@ EntranceWindow::EntranceWindow(QWidget *parent)
     changeStyleSheet(ui->MusicButton_);
     changeStyleSheet(ui->SaveButton_);
     changeStyleSheet(ui->StartButton_);
-
-    // ui->newGameBtn->setStyleSheet(
-    //     "QPushButton { background-color: rgba(0, 0, 0, 0); border: none; }"
-    //     "QPushButton:hover { background-color: rgba(255,255,255, 0.1); }"
-    //     "QPushButton:pressed { background-color: rgba(255,255,255, 0.2); }"
-    //     );
-
 }
 
 EntranceWindow::~EntranceWindow()
@@ -65,18 +58,24 @@ void EntranceWindow::displayText()
     QLabel* bgmText = new QLabel(this);
     GlobalState::makeText(bgmText,"Inspiration","Eras Medium ITC",46,QColor(255,255,255),QPoint(144,699));
     mainTitle->show();
-
-    // ------调试，查看本机字体
-    // QFontDatabase database;
-    // foreach (const QString &family, database.families())
-    // {
-    //     qDebug() << family;
-    // }
 }
 
 void EntranceWindow::on_ShopButton__clicked()
 {
-    Shop s = Shop(this);
-    s.exec();
+    shopWindow_ = new Shop(this);
+    shopWindow_->exec();
+}
+
+void EntranceWindow::on_StartButton__clicked()
+{
+    playWindow_ = new PlayWindow();
+    connect(playWindow_,&PlayWindow::playWindowClosed,this,&EntranceWindow::on_PlayWindowClosed);
+    playWindow_->show();
+    this->hide();
+}
+
+void EntranceWindow::on_PlayWindowClosed()
+{
+    this->show();
 }
 

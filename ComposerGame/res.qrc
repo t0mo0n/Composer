@@ -13,5 +13,38 @@
         <file>resource/Save_pS.png</file>
         <file>resource/start.png</file>
         <file>resource/NewGame.png</file>
+        <file>resource/Belt_left.png</file>
+        <file>resource/Center_1.png</file>
+        <file>resource/Center_2.png</file>
+        <file>resource/centerUpdate.png</file>
+        <file>resource/centerUpdated.png</file>
+        <file>resource/Compose.png</file>
+        <file>resource/Congratulations.png</file>
+        <file>resource/Cutter.png</file>
+        <file>resource/Do.png</file>
+        <file>resource/EmptyNote.png</file>
+        <file>resource/Fa.png</file>
+        <file>resource/La.png</file>
+        <file>resource/Mi.png</file>
+        <file>resource/moreCoinsUpdate.png</file>
+        <file>resource/moreCoinsUpdated.png</file>
+        <file>resource/music_3.png</file>
+        <file>resource/musicBlock.png</file>
+        <file>resource/musicBlockUpdate.png</file>
+        <file>resource/musicBlockUpdated.png</file>
+        <file>resource/Play.png</file>
+        <file>resource/Re.png</file>
+        <file>resource/ShopBG.png</file>
+        <file>resource/Si.png</file>
+        <file>resource/So.png</file>
+        <file>resource/sound_off.png</file>
+        <file>resource/sound_on.png</file>
+        <file>resource/SpeedMachine.png</file>
+        <file>resource/musicSt&amp;Info.png</file>
+        <file>resource/smShop.png</file>
+        <file>resource/PlayWindowBg.png</file>
+        <file>resource/Bin.png</file>
+        <file>resource/PlayWindowBg2.png</file>
+        <file>resource/PlayWindowBg3.png</file>
     </qresource>
 </RCC>
