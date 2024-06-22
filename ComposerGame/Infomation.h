@@ -19,7 +19,6 @@ private:
     void displayText();
 
     QPainter *infoPainter;
-
     int chapterInfo;
 };
 

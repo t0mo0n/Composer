@@ -46,5 +46,7 @@
         <file>resource/Bin.png</file>
         <file>resource/PlayWindowBg2.png</file>
         <file>resource/PlayWindowBg3.png</file>
+        <file>resource/emptyBlock.png</file>
+        <file>resource/normalBlock.png</file>
     </qresource>
 </RCC>
