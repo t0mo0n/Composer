@@ -15,18 +15,15 @@ public:
     QRectF boundingRect()const override;
     void paint(QPainter *painter, const QStyleOptionGraphicsItem *op, QWidget *widget) override;
 
-    // void mousePressEvent(QGraphicsSceneMouseEvent *) override;
-    // void mouseReleaseEvent(QGraphicsSceneMouseEvent *) override;
-
     void setBlockPos_(QPoint pos);
-    QPoint &getBlockPos_();
+    int getBlockContent(){ return bContent;}
+    void setBlockContent(int ct){ bContent = (enum blockContent)ct;}
+
     bool occupied;
 private:
     enum blockType_{ normal_block = 0, inspire_block, empty_block } bType;
+    enum blockContent{ empty = 0,belt,composer,cutter,bin,speedSwitcher,center} bContent;
     QPoint blockPos_;
-    // bool pressed;
-
-    // PlayWindow *myPw_;
 };
 
 #endif // BLOCK_H

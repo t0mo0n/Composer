@@ -3,13 +3,13 @@
 #include "Block.h"
 
 
-Composer::Composer(int level,QPointF pos_)
+Composer::Composer(int level,QPoint pos_)
 {
     composerLv_ = (enum levels)level;
 
     composerPos_ = pos_;
 
-    composerDir_ = up;
+    changeDir_(right);
 }
 
 QRectF Composer::boundingRect() const
@@ -19,9 +19,29 @@ QRectF Composer::boundingRect() const
 
 void Composer::paint(QPainter *painter, const QStyleOptionGraphicsItem *op, QWidget *widget)
 {
-    QPixmap composerPix;
-    composerPix.load(":/img/resource/Compose.png");
     painter->drawPixmap(boundingRect(),composerPix,composerPix.rect());
+}
+
+void Composer::changeDir_(int dir)
+{
+    composerDir_ = (enum direction)dir;
+
+    switch (composerDir_) {
+    case right:
+        composerPix.load(":/img/resource/ComposerRight.png");
+        break;
+    case down:
+        composerPix.load(":/img/resource/ComposerDown.png");
+        break;
+    case left:
+        composerPix.load(":/img/resource/ComposerLeft.png");
+        break;
+    case up:
+        composerPix.load(":/img/resource/ComposerUp.png");
+        break;
+    }
+
+    update();
 }
 
 

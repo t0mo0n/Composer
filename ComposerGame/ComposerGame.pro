@@ -13,7 +13,6 @@ SOURCES += \
     Bin.cpp \
     Block.cpp \
     Center.cpp \
-    Components.cpp \
     Composer.cpp \
     Congratulation.cpp \
     Cutter.cpp \
@@ -31,13 +30,13 @@ HEADERS += \
     Bin.h \
     Block.h \
     Center.h \
-    Components.h \
     Composer.h \
     Congratulation.h \
     Cutter.h \
     EntranceWindow.h \
     GlobalState.h \
     Infomation.h \
+    MyObjectPool.h \
     Note.h \
     PlayWindow.h \
     Shop.h \

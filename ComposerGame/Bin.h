@@ -1,13 +1,17 @@
 #ifndef BIN_H
 #define BIN_H
 
-#include <QGraphicsObject>
-#include "Components.h"
+#include <QGraphicsItem>
 
-class Bin : public Components
+class Bin : public QGraphicsItem
 {
 public:
-    Bin();
+    Bin(QPoint pos);
+    QRectF boundingRect()const override;
+    void paint(QPainter *painter, const QStyleOptionGraphicsItem *op, QWidget *widget) override;
+
+    // void discardNotes();
+
 private:
     QPoint binPos_;
 

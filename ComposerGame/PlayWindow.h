@@ -17,7 +17,8 @@
 #include "Infomation.h"
 #include "Block.h"
 #include "Center.h"
-#include "Components.h"
+#include "MyObjectPool.h"
+#include "Note.h"
 #include "Belt.h"
 #include "Composer.h"
 #include "Cutter.h"
@@ -40,13 +41,11 @@ public:
     void mouseReleaseEvent(QMouseEvent *) override;
     void mouseMoveEvent(QMouseEvent *) override;
 
-    static int initSpeed;
-    static int composerLevel;
-    static int cutterLevel;
-    static enum ttype_ {belt = 1, composer, cutter, bin, speedSwitcher} toolType;
+    static MyObjectPool<Note> notePool;
 
     friend Infomation;
-    friend Block;
+    friend Shop;
+    friend Congratulation;
 protected:
     void closeEvent(QCloseEvent *event) override;
     void drawBackground(QPainter *painter, const QRectF &rect) override;
@@ -71,6 +70,8 @@ private slots:
 
     void on_SpeedMachineTool__clicked();
 
+    void on_ShopWindow__Closed();
+
 private:
     void changeStyleSheet(QToolButton *btn);
     void initMap(QFile *file = nullptr);
@@ -83,11 +84,13 @@ private:
     Ui::PlayWindow *ui;
     QGraphicsScene *mainScene;
     QTimer *updateTimer;
+    QGraphicsTextItem *ssnumTextItem;
 
     Congratulation *cGWindow;
     Shop *shopWindow;
     Infomation *infoWindow;
     Center *gameCenter;
+    MyObjectPool<Belt> beltPool;
 
     int bgGenerateNum;
     int chapterNum;
@@ -99,6 +102,12 @@ private:
     QPoint pressedPos_;
     QPoint lastPos_;
 
+    // 私有静态数据成员。。。好像没必要，最后再改
+    static int initSpeed;
+    static int composerLevel;
+    static int cutterLevel;
+    static enum ttype_ {belt = 1, composer, cutter, bin, speedSwitcher} toolType;
+
     static int Do_received;
     static int Re_received;
     static int Mi_received;
@@ -107,12 +116,13 @@ private:
     static int La_received;
     static int Si_received;
     static int Empty_received;
+    static int speedSwitcherNum;
 
-    static QList<Belt*> belts_;
-    static QList<Composer*> composers_;
-    static QList<Cutter*> cutters_;
-    static QList<Bin*> bins_;
-    static QList<SpeedSwitcher*> speedSwitchers_;
+    static QHash<QPoint, QSharedPointer<Belt>> belts_;
+    static QHash<QPoint, Composer*> composers_;
+    static QHash<QPoint, Cutter*> cutters_;
+    static QHash<QPoint, Bin*> bins_;
+    static QHash<QPoint, SpeedSwitcher*> speedSwitchers_;
 
 };
 

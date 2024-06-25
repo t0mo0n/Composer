@@ -1,19 +1,30 @@
 #ifndef CUTTER_H
 #define CUTTER_H
 
-#include "Components.h"
+#include <QGraphicsItem>
 
-class Cutter : public Components
+class Cutter : public QGraphicsItem
 {
 public:
-    Cutter(int level,QPointF pos_);
+    Cutter(int level,QPoint pos_);
     QRectF boundingRect()const override;
     void paint(QPainter *painter, const QStyleOptionGraphicsItem *op, QWidget *widget) override;
 
+    int getDir(){ return cutterDir_;}
+    void changeDir_(int dir);
+    QPoint getPos_1(){return cutterPos_1;}
+    QPoint getPos_2(){return cutterPos_2;}
+
+    // void noteCutting(); TODO
+
+    bool occupied;
+
 private:
-    QPointF cutterPos_;
-    enum direction {up=1,down,left,right} cutterDir_;
-    enum levels { lv0, lv1} cutterLv_;
+    QPoint cutterPos_1;
+    QPoint cutterPos_2;
+    enum direction {right = 1,down,left,up} cutterDir_; // 注意，这里的方向是入口方向！和别的不一样！
+    enum levels { lv1 = 1, lv2} cutterLv_;
+    QPixmap cutterPix;
 };
 
 #endif // CUTTER_H

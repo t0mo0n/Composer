@@ -4,6 +4,7 @@
 #include <QPainter>
 #include <QMessageBox>
 #include "GlobalState.h"
+#include "PlayWindow.h"
 
 Congratulation::Congratulation(QWidget *parent,int chapter)
     : QDialog(parent)
@@ -67,7 +68,7 @@ void Congratulation::paintEvent(QPaintEvent *event)
 void Congratulation::closeEvent(QCloseEvent *event)
 {
     // 检测到发出的已经完成升级的信号，自动关闭此窗口，并且结合目前的关卡情况,和全局状态，对下一关进行初始化;
-
+    // TODO
     QDialog::closeEvent(event);
 }
 
@@ -85,9 +86,10 @@ void Congratulation::on_BeltUpBtn__clicked()
     auto btn = QMessageBox::information(this,"强化确认","确定要强化传送带\n基础速度（推荐）？",QMessageBox::Yes|QMessageBox::No,QMessageBox::No);
     if (btn == QMessageBox::Yes){
         // 改变本局局内强化变量
+        PlayWindow::initSpeed += 1;
         this->close();
     } else{
-        QMessageBox::information(this,"强化确认","请选择一项强化\n后继续游戏");
+        QMessageBox::information(this,"强化确认","请选择一项强化后\n继续游戏");
     }
 }
 
@@ -96,10 +98,10 @@ void Congratulation::on_CenterUpBtn__clicked()
 {
     auto btn = QMessageBox::information(this,"强化确认","确定要强化创作\n方块创作速度？",QMessageBox::Yes|QMessageBox::No,QMessageBox::No);
     if (btn == QMessageBox::Yes){
-        // 改变本局局内强化变量
+        PlayWindow::composerLevel += 1;
         this->close();
     } else{
-        QMessageBox::information(this,"强化确认","请选择一项强化\n后继续游戏");
+        QMessageBox::information(this,"强化确认","请选择一项强化后\n继续游戏");
     }
 }
 
@@ -108,10 +110,10 @@ void Congratulation::on_CutterUpBtn__clicked()
 {
     auto btn = QMessageBox::information(this,"强化确认","确定要强化切割\n机切割速度？",QMessageBox::Yes|QMessageBox::No,QMessageBox::No);
     if (btn == QMessageBox::Yes){
-        // 改变本局局内强化变量
+        PlayWindow::cutterLevel += 1;
         this->close();
     } else{
-        QMessageBox::information(this,"强化确认","请选择一项强化\n后继续游戏");
+        QMessageBox::information(this,"强化确认","请选择一项强化后\n继续游戏");
     }
 }
 
