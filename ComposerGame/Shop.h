@@ -26,8 +26,12 @@ public:
     ~Shop();
 protected:
     void paintEvent(QPaintEvent *event) override;
+    void closeEvent(QCloseEvent *event) override;
     void changeStyleSheet(QToolButton *btn);
     void displayText();
+
+signals:
+    void shopWindowClosed();
 
 private slots:
     void on_ctUpdateBtn_clicked();

@@ -13,7 +13,7 @@
         <file>resource/Save_pS.png</file>
         <file>resource/start.png</file>
         <file>resource/NewGame.png</file>
-        <file>resource/Belt_left.png</file>
+        <file>resource/Belt_RightToLeft.png</file>
         <file>resource/Center_1.png</file>
         <file>resource/Center_2.png</file>
         <file>resource/centerUpdate.png</file>
@@ -46,5 +46,30 @@
         <file>resource/Bin.png</file>
         <file>resource/PlayWindowBg2.png</file>
         <file>resource/PlayWindowBg3.png</file>
+        <file>resource/emptyBlock.png</file>
+        <file>resource/normalBlock.png</file>
+        <file>resource/Belt_DownToLeft.png</file>
+        <file>resource/Belt_DownToRight.png</file>
+        <file>resource/Belt_DownToUp.png</file>
+        <file>resource/Belt_LeftToDown.png</file>
+        <file>resource/Belt_LeftToRight.png</file>
+        <file>resource/Belt_LeftToUp.png</file>
+        <file>resource/Belt_RightToDown.png</file>
+        <file>resource/Belt_RightToUp.png</file>
+        <file>resource/Belt_UpToDown.png</file>
+        <file>resource/Belt_UpToLeft.png</file>
+        <file>resource/Belt_UpToRight.png</file>
+        <file>resource/ComposerDown.png</file>
+        <file>resource/ComposerLeft.png</file>
+        <file>resource/ComposerRight.png</file>
+        <file>resource/ComposerUp.png</file>
+        <file>resource/CutterDown.png</file>
+        <file>resource/CutterLeft.png</file>
+        <file>resource/CutterRight.png</file>
+        <file>resource/CutterUp.png</file>
+        <file>resource/ssDown.png</file>
+        <file>resource/ssLeft.png</file>
+        <file>resource/ssRight.png</file>
+        <file>resource/ssUp.png</file>
     </qresource>
 </RCC>

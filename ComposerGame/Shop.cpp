@@ -71,6 +71,12 @@ void Shop::paintEvent(QPaintEvent *event)
     shopPainter->end();
 }
 
+void Shop::closeEvent(QCloseEvent *event)
+{
+    emit shopWindowClosed();
+    QDialog::closeEvent(event);
+}
+
 void Shop::changeStyleSheet(QToolButton *btn)
 {
     btn->setStyleSheet(
@@ -122,6 +128,8 @@ void Shop::displayText()
     GlobalState::makeText(smPrice_,"$: 50","Eras Bold ITC",16,QColor(37,139,255),QPoint(516,324));
     smPrice_->show();
 }
+
+
 
 void Shop::on_ctUpdateBtn_clicked()
 {
@@ -184,7 +192,16 @@ void Shop::on_nvUpdateBtn_clicked()
 void Shop::on_smShopBtn_clicked()
 {
     if (inGame_){
-        // 判断钱够不够，如果够，花钱，购入一个变速箱，并实时更新PlayWindow的本地信息中的变速箱数量，实时更新钱的数值；如果不够提升
+        // 判断钱够不够，如果够，花钱，购入一个变速箱，并实时更新PlayWindow的本地信息中的变速箱数量，实时更新钱的数值；如果不够提示
+        int &ssNum = PlayWindow::speedSwitcherNum;
+        int &shop_coins = EntranceWindow::globalState_.coins;
+        if (shop_coins >= PRICE_4){
+            shop_coins -= PRICE_4;
+            ssNum += 1;
+            update();
+        } else{
+            QMessageBox::warning(this,"购买提示","你的钱不够！多赚点再来");
+        }
     } else{
         QMessageBox::information(this,"购买提示","请进入游戏后再购买局部强化物品");
     }

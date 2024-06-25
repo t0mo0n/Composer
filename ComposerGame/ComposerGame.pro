@@ -9,21 +9,38 @@ CONFIG += c++17
 #DEFINES += QT_DISABLE_DEPRECATED_BEFORE=0x060000    # disables all the APIs deprecated before Qt 6.0.0
 
 SOURCES += \
+    Belt.cpp \
+    Bin.cpp \
+    Block.cpp \
+    Center.cpp \
+    Composer.cpp \
     Congratulation.cpp \
+    Cutter.cpp \
     GlobalState.cpp \
     Infomation.cpp \
+    Note.cpp \
     PlayWindow.cpp \
     Shop.cpp \
+    SpeedSwitcher.cpp \
     main.cpp \
     EntranceWindow.cpp
 
 HEADERS += \
+    Belt.h \
+    Bin.h \
+    Block.h \
+    Center.h \
+    Composer.h \
     Congratulation.h \
+    Cutter.h \
     EntranceWindow.h \
     GlobalState.h \
     Infomation.h \
+    MyObjectPool.h \
+    Note.h \
     PlayWindow.h \
-    Shop.h
+    Shop.h \
+    SpeedSwitcher.h
 
 FORMS += \
     Congratulation.ui \

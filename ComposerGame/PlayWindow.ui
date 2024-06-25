@@ -191,7 +191,7 @@
    </property>
    <property name="icon">
     <iconset resource="res.qrc">
-     <normaloff>:/img/resource/Belt_left.png</normaloff>:/img/resource/Belt_left.png</iconset>
+     <normaloff>:/img/resource/Belt_RightToLeft.png</normaloff>:/img/resource/Belt_RightToLeft.png</iconset>
    </property>
    <property name="iconSize">
     <size>
