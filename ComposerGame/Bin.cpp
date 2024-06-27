@@ -19,3 +19,4 @@ void Bin::paint(QPainter *painter, const QStyleOptionGraphicsItem *op, QWidget *
     binPix.load(":/img/resource/Bin.png");
     painter->drawPixmap(boundingRect(),binPix,binPix.rect());
 }
+

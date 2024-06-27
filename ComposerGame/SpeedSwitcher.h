@@ -12,8 +12,8 @@ public:
 
     int getDir(){ return ssDir_;}
     void changeDir_(int dir);
-    // void switchSpeed();
 
+    bool occupied;
 private:
     QPoint ssPos_;
     enum direction {right = 1,down,left,up} ssDir_;

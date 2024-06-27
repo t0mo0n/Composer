@@ -21,13 +21,14 @@ int PlayWindow::Si_received=0;
 int PlayWindow::Empty_received=0;
 int PlayWindow::speedSwitcherNum=5;
 PlayWindow::ttype_ PlayWindow::toolType = PlayWindow::composer;
+MyObjectPool<Note> PlayWindow::notePool;
+QList<QSharedPointer<Note>> PlayWindow::notes_;
 QHash<QPoint, QSharedPointer<Belt>> PlayWindow::belts_;
 QHash<QPoint, Composer*> PlayWindow::composers_;
 QHash<QPoint, Cutter*> PlayWindow::cutters_;
 QHash<QPoint, Bin*> PlayWindow::bins_;
 QHash<QPoint, SpeedSwitcher*> PlayWindow::speedSwitchers_;
-MyObjectPool<Note> PlayWindow::notePool;
-
+QGraphicsScene *PlayWindow::mainScene;
 
 PlayWindow::PlayWindow(QWidget *parent,int chapnum,QString archiveFileName)
     : QGraphicsView(parent)
@@ -83,9 +84,19 @@ PlayWindow::PlayWindow(QWidget *parent,int chapnum,QString archiveFileName)
     QString ssnumText = "remain:" + QString::number(speedSwitcherNum);
     ssnumTextItem->setPlainText(ssnumText);
 
+    pressedPos_ = QPoint(-100,-100);
+    lastPos_ = QPoint(-200,-200);
+    toPut = false;
+    toSpin = false;
+    toDelete = false;
+
     updateTimer = new QTimer();
     connect(updateTimer,&QTimer::timeout, this,&PlayWindow::updateGame);
     updateTimer->start(100);
+
+    noteMoveTimer = new QTimer();
+    connect(noteMoveTimer,&QTimer::timeout,this,&PlayWindow::noteMove);
+    noteMoveTimer->start(50);
 }
 
 PlayWindow::~PlayWindow()
@@ -123,7 +134,7 @@ void PlayWindow::mousePressEvent(QMouseEvent *event)
                 QSharedPointer<Belt> new_belt = beltPool.acquire();
                 new_belt->initBelt(1,mapFromModeltoReal(pressedPos_));
                 belts_.insert(pressedPos_,new_belt);
-                new_belt->setZValue(1);
+                new_belt.data()->setZValue(1);
                 mainScene->addItem(new_belt.data());
                 gameMap[pressedPos_.y()][pressedPos_.x()]->occupied = true;
                 gameMap[pressedPos_.y()][pressedPos_.x()]->setBlockContent(1);
@@ -166,28 +177,24 @@ void PlayWindow::mouseReleaseEvent(QMouseEvent *event)
                 break;
             }
             case cutter:{
-                Cutter *spinCutter = cutters_.value(pressedPos_);
+                Cutter *spinCutter = cutters_.value(pressedPos_,nullptr);
+                if (spinCutter == nullptr){
+                    QList<QPoint> findSpinCtList= {QPoint(0,1),QPoint(0,-1),QPoint(1,0),QPoint(-1,0)};
+                    for (auto point : findSpinCtList) {
+                        spinCutter = cutters_.value(point+pressedPos_,nullptr);
+                        if (spinCutter != nullptr && spinCutter->getPos_2() == mapFromModeltoReal(pressedPos_)) break;
+                    }
+                    if (spinCutter == nullptr){
+                        QMessageBox::critical(this,"出错","ERROR！");
+                        toSpin = false;
+                        toDelete = false;
+                        toPut = false;
+                        return;
+                    }
+                }
                 int new_dir = spinCutter->getDir()%4+1;
                 switch (new_dir) {
                 case 1:
-                    if (gameMap[pressedPos_.y()+1][pressedPos_.x()]->occupied){
-                        toSpin = false;
-                        toDelete = false;
-                        toPut = false;
-                        QMessageBox::warning(this,"放置警告","这个位置已经被占用！\n无法旋转过去");
-                        return;
-                    }
-                    break;
-                case 2:
-                    if (gameMap[pressedPos_.y()][pressedPos_.x()-1]->occupied){
-                        toSpin = false;
-                        toDelete = false;
-                        toPut = false;
-                        QMessageBox::warning(this,"放置警告","这个位置已经被占用！\n无法旋转过去");
-                        return;
-                    }
-                    break;
-                case 3:
                     if (gameMap[pressedPos_.y()-1][pressedPos_.x()]->occupied){
                         toSpin = false;
                         toDelete = false;
@@ -196,8 +203,26 @@ void PlayWindow::mouseReleaseEvent(QMouseEvent *event)
                         return;
                     }
                     break;
-                case 4:
+                case 2:
                     if (gameMap[pressedPos_.y()][pressedPos_.x()+1]->occupied){
+                        toSpin = false;
+                        toDelete = false;
+                        toPut = false;
+                        QMessageBox::warning(this,"放置警告","这个位置已经被占用！\n无法旋转过去");
+                        return;
+                    }
+                    break;
+                case 3:
+                    if (gameMap[pressedPos_.y()+1][pressedPos_.x()]->occupied){
+                        toSpin = false;
+                        toDelete = false;
+                        toPut = false;
+                        QMessageBox::warning(this,"放置警告","这个位置已经被占用！\n无法旋转过去");
+                        return;
+                    }
+                    break;
+                case 4:
+                    if (gameMap[pressedPos_.y()][pressedPos_.x()-1]->occupied){
                         toSpin = false;
                         toDelete = false;
                         toPut = false;
@@ -230,7 +255,7 @@ void PlayWindow::mouseReleaseEvent(QMouseEvent *event)
             // TODO :deal with this situation;
             switch (gameMap[pressedPos_.y()][pressedPos_.x()]->getBlockContent()) {
             case belt:{
-                QSharedPointer<Belt> deleteBelt_ = belts_.value(pressedPos_);
+                QSharedPointer<Belt> deleteBelt_ = belts_.value(pressedPos_,nullptr);
                 mainScene->removeItem(deleteBelt_.data());
                 belts_.remove(pressedPos_);
                 deleteBelt_->deleteBelt();
@@ -249,7 +274,21 @@ void PlayWindow::mouseReleaseEvent(QMouseEvent *event)
                 break;
             }
             case cutter:{
-                Cutter *deleteCutter_ = cutters_.value(pressedPos_);
+                Cutter *deleteCutter_ = cutters_.value(pressedPos_,nullptr);
+                if (deleteCutter_ == nullptr){
+                    QList<QPoint> findDeleteCtList= {QPoint(0,1),QPoint(0,-1),QPoint(1,0),QPoint(-1,0)};
+                    for (auto point : findDeleteCtList) {
+                        deleteCutter_ = cutters_.value(point+pressedPos_,nullptr);
+                        if (deleteCutter_ != nullptr && deleteCutter_->getPos_2() == mapFromModeltoReal(pressedPos_)) break;
+                    }
+                    if (deleteCutter_ == nullptr){
+                        QMessageBox::critical(this,"出错","ERROR！");
+                        toSpin = false;
+                        toDelete = false;
+                        toPut = false;
+                        return;
+                    }
+                }
                 mainScene->removeItem(deleteCutter_);
                 cutters_.remove(pressedPos_);
                 QPoint newCtPos2Maped = mapFromViewToGameMap(deleteCutter_->getPos_2());
@@ -290,21 +329,22 @@ void PlayWindow::mouseReleaseEvent(QMouseEvent *event)
                 break; // 为了保持完整性，其实完全没有意义
             }
             case composer:{
-                Composer *new_composer = new Composer(composerLevel,mapFromModeltoReal(pressedPos_));
+                Composer *new_composer = new Composer(composerLevel,
+                                    gameMap[pressedPos_.y()][pressedPos_.x()]->getBlockType(),mapFromModeltoReal(pressedPos_));
                 composers_.insert(pressedPos_,new_composer);
-                new_composer->setZValue(1);
+                new_composer->setZValue(3);
                 mainScene->addItem(new_composer);
                 gameMap[pressedPos_.y()][pressedPos_.x()]->occupied = true;
                 gameMap[pressedPos_.y()][pressedPos_.x()]->setBlockContent(2);
                 break;
             }
             case cutter:{
-                if (gameMap[pressedPos_.y()+1][pressedPos_.x()]->occupied){
+                if (gameMap[pressedPos_.y()-1][pressedPos_.x()]->occupied){
                     QMessageBox::warning(this,"放置警告","这里放Cutter会产生空间\n冲突！请换一个地方放置\n或删除原有组件");
                 } else{
                     Cutter *new_cutter = new Cutter(cutterLevel,mapFromModeltoReal(pressedPos_));
                     cutters_.insert(pressedPos_,new_cutter);
-                    new_cutter->setZValue(1);
+                    new_cutter->setZValue(3);
                     mainScene->addItem(new_cutter);
                     gameMap[pressedPos_.y()][pressedPos_.x()]->occupied = true;
                     QPoint newCtPos2Maped = mapFromViewToGameMap(new_cutter->getPos_2());
@@ -317,7 +357,7 @@ void PlayWindow::mouseReleaseEvent(QMouseEvent *event)
             case bin:{
                 Bin *new_bin = new Bin(mapFromModeltoReal(pressedPos_));
                 bins_.insert(pressedPos_,new_bin);
-                new_bin->setZValue(1);
+                new_bin->setZValue(3);
                 mainScene->addItem(new_bin);
                 gameMap[pressedPos_.y()][pressedPos_.x()]->occupied = true;
                 gameMap[pressedPos_.y()][pressedPos_.x()]->setBlockContent(4);
@@ -330,7 +370,7 @@ void PlayWindow::mouseReleaseEvent(QMouseEvent *event)
                     speedSwitcherNum -= 1;
                     SpeedSwitcher *new_speedSwitcher = new SpeedSwitcher(mapFromModeltoReal(pressedPos_));
                     speedSwitchers_.insert(pressedPos_,new_speedSwitcher);
-                    new_speedSwitcher->setZValue(1);
+                    new_speedSwitcher->setZValue(3);
                     mainScene->addItem(new_speedSwitcher);
                     gameMap[pressedPos_.y()][pressedPos_.x()]->occupied = true;
                     gameMap[pressedPos_.y()][pressedPos_.x()]->setBlockContent(5);
@@ -374,7 +414,7 @@ void PlayWindow::mouseMoveEvent(QMouseEvent *event)
                         QSharedPointer<Belt> new_belt = beltPool.acquire();
                         new_belt->initBelt(1,mapFromModeltoReal(nowPos_));
                         belts_.insert(nowPos_,new_belt);
-                        new_belt->setZValue(1);
+                        new_belt.data()->setZValue(1);
                         mainScene->addItem(new_belt.data());
                         gameMap[nowPos_.y()][nowPos_.x()]->occupied = true;
                         gameMap[nowPos_.y()][nowPos_.x()]->setBlockContent(1);
@@ -392,7 +432,7 @@ void PlayWindow::mouseMoveEvent(QMouseEvent *event)
                         QSharedPointer<Belt> new_belt = beltPool.acquire();
                         new_belt->initBelt(2,mapFromModeltoReal(nowPos_));
                         belts_.insert(nowPos_,new_belt);
-                        new_belt->setZValue(1);
+                        new_belt.data()->setZValue(1);
                         mainScene->addItem(new_belt.data());
                         gameMap[nowPos_.y()][nowPos_.x()]->occupied = true;
                         gameMap[nowPos_.y()][nowPos_.x()]->setBlockContent(1);
@@ -409,7 +449,7 @@ void PlayWindow::mouseMoveEvent(QMouseEvent *event)
                         QSharedPointer<Belt> new_belt = beltPool.acquire();
                         new_belt->initBelt(3,mapFromModeltoReal(nowPos_));
                         belts_.insert(nowPos_,new_belt);
-                        new_belt->setZValue(1);
+                        new_belt.data()->setZValue(1);
                         mainScene->addItem(new_belt.data());
                         gameMap[nowPos_.y()][nowPos_.x()]->occupied = true;
                         gameMap[nowPos_.y()][nowPos_.x()]->setBlockContent(1);
@@ -426,7 +466,7 @@ void PlayWindow::mouseMoveEvent(QMouseEvent *event)
                         QSharedPointer<Belt> new_belt = beltPool.acquire();
                         new_belt->initBelt(4,mapFromModeltoReal(nowPos_));
                         belts_.insert(nowPos_,new_belt);
-                        new_belt->setZValue(1);
+                        new_belt.data()->setZValue(1);
                         mainScene->addItem(new_belt.data());
                         gameMap[nowPos_.y()][nowPos_.x()]->occupied = true;
                         gameMap[nowPos_.y()][nowPos_.x()]->setBlockContent(1);
@@ -444,6 +484,13 @@ void PlayWindow::mouseMoveEvent(QMouseEvent *event)
     }
 }
 
+void PlayWindow::setNoteToScene(QSharedPointer<Note> np)
+{
+    np.data()->setZValue(2);
+    mainScene->addItem(np.data());
+    notes_.push_back(np);
+}
+
 void PlayWindow::closeEvent(QCloseEvent *event)
 {
     Do_received = 0;
@@ -454,12 +501,20 @@ void PlayWindow::closeEvent(QCloseEvent *event)
     La_received = 0;
     Si_received = 0;
     Empty_received = 0;
+    speedSwitcherNum += speedSwitchers_.size();
 
     belts_.clear();
     composers_.clear();
     cutters_.clear();
     bins_.clear();
     speedSwitchers_.clear();
+
+    for (auto &note : notes_){
+        notePool.release(note);
+    }
+    notes_.clear();
+
+    delete(mainScene);
 
     emit playWindowClosed();
     QGraphicsView::closeEvent(event);
@@ -601,15 +656,11 @@ void PlayWindow::remainedAreaConstruct(const QRect &totalArea, const QList<QRect
     }
 }
 
-QPoint PlayWindow::mapFromViewToGameMap(QPoint viewPos)
+QPoint PlayWindow::mapFromViewToGameMap(QPoint scenePos)
 {
-    QPointF scenePos = this->mapToScene(viewPos);
-
-    // 调整场景坐标，减去gameMap的偏移量
     scenePos.setX(scenePos.x() - 5 * BLOCK_WIDTH);
     scenePos.setY(scenePos.y() - 3.5 * BLOCK_HEIGHT);
 
-    // 计算行列索引
     int colIndex = static_cast<int>(scenePos.x()) / BLOCK_WIDTH;
     int rowIndex = static_cast<int>(scenePos.y()) / BLOCK_HEIGHT;
 
@@ -624,11 +675,415 @@ void PlayWindow::on_ShopBtn__clicked()
     shopWindow->exec();
 }
 
-
 void PlayWindow::on_InfoBtn__clicked()
 {
     infoWindow = new Infomation(this,chapterNum);
     infoWindow->exec();
+}
+
+void PlayWindow::updateGame()
+{
+    this->update();
+}
+
+// Move函数逻辑：
+// 先判定当前绑定位置是否合法；再判定当前绑定位置有无方块，有什么方块？
+// 结合方块类型做处理：分为当前绑定的是什么以及移动完绑定的是什么
+// composer 和cutter 生成时，会把note放在自己的方块中间；所以如果note在它们上面，就会朝着出口方向移动
+// 当前在belt上则先判定方向，再进行正常移动；
+// 移动结束以后重新判定，重新绑定方块！判断碰到了什么方块，最后如果碰到cutter则先判定方向；再做消亡处理，然后马上调用其生成函数；
+// 结束碰到ss则先判定方向，再进行跳转移动，其中改变速度直接对note做就行，压根用不着ss；
+// center则被center类处理掉并增加计数与金币；bin直接处理掉
+void PlayWindow::noteMove()
+{
+    for (int i = notes_.size()-1;i>=0;i--){
+        auto &note = notes_[i];
+        QPoint mapBoundedPos_ = mapFromViewToGameMap(note->boundedPos_);
+        QSharedPointer<Belt> beltToMove_ = nullptr;
+        Composer *composerToMove = nullptr;
+        Cutter *cutterToMove = nullptr;
+        SpeedSwitcher *ssToMove = nullptr;
+        int typo__ = 0;
+        if (gameMap[mapBoundedPos_.y()][mapBoundedPos_.x()]->getBlockContent() == 1){
+            // 在belt上的移动
+            typo__ = 1;
+            beltToMove_ = belts_.value(mapBoundedPos_);
+            switch (beltToMove_->getDir()) {
+            case 1:
+                note->moveBy(note->noteSpeed_,0);
+                break;
+            case 2:
+                note->moveBy(-note->noteSpeed_,0);
+                break;
+            case 3:
+                note->moveBy(0,note->noteSpeed_);
+                break;
+            case 4:
+                note->moveBy(0,-note->noteSpeed_);
+                break;
+            case 5:
+                if (note->boundingRect().center().x() < beltToMove_->boundingRect().center().x()){
+                    note->moveBy(note->noteSpeed_,0);
+                } else{
+                    note->setNoteX((int)beltToMove_->boundingRect().center().x()); // 是否能成功设置并显示x的改变？
+                    note->moveBy(0,-note->noteSpeed_);
+                }
+                break;
+            case 6:
+                if (note->boundingRect().center().x() > beltToMove_->boundingRect().center().x()){
+                    note->moveBy(-note->noteSpeed_,0);
+                } else{
+                    note->setNoteX((int)beltToMove_->boundingRect().center().x());
+                    note->moveBy(0,-note->noteSpeed_);
+                }
+                break;
+            case 7:
+                if (note->boundingRect().center().y() < beltToMove_->boundingRect().center().y()){
+                    note->moveBy(0,note->noteSpeed_);
+                } else{
+                    note->setNoteY((int)beltToMove_->boundingRect().center().y());
+                    note->moveBy(-note->noteSpeed_,0);
+                }
+                break;
+            case 8:
+                if (note->boundingRect().center().y() > beltToMove_->boundingRect().center().y()){
+                    note->moveBy(0,-note->noteSpeed_);
+                } else{
+                    note->setNoteX((int)beltToMove_->boundingRect().center().y());
+                    note->moveBy(0,-note->noteSpeed_);
+                }
+                break;
+            case 9:
+                if (note->boundingRect().center().x() < beltToMove_->boundingRect().center().x()){
+                    note->moveBy(note->noteSpeed_,0);
+                } else{
+                    note->setNoteX((int)beltToMove_->boundingRect().center().x());
+                    note->moveBy(0,note->noteSpeed_);
+                }
+                break;
+            case 10:
+                if (note->boundingRect().center().x() > beltToMove_->boundingRect().center().x()){
+                    note->moveBy(-note->noteSpeed_,0);
+                } else{
+                    note->setNoteX((int)beltToMove_->boundingRect().center().x());
+                    note->moveBy(0,note->noteSpeed_);
+                }
+                break;
+            case 11:
+                if (note->boundingRect().center().y() < beltToMove_->boundingRect().center().y()){
+                    note->moveBy(0,note->noteSpeed_);
+                } else{
+                    note->setNoteY((int)beltToMove_->boundingRect().center().y());
+                    note->moveBy(note->noteSpeed_,0);
+                }
+                break;
+            case 12:
+                if (note->boundingRect().center().y() > beltToMove_->boundingRect().center().y()){
+                    note->moveBy(0,-note->noteSpeed_);
+                } else{
+                    note->setNoteY((int)beltToMove_->boundingRect().center().y());
+                    note->moveBy(note->noteSpeed_,0);
+                }
+                break;
+            default:
+                QMessageBox::critical(this,"出错","ERROR!建议\n保存后重启游戏");
+                break;
+            }
+        } else if(gameMap[mapBoundedPos_.y()][mapBoundedPos_.x()]->getBlockContent() == 2){
+            typo__ = 2;
+            composerToMove = composers_.value(mapBoundedPos_,nullptr);
+            switch (composerToMove->getDir()) {
+            case 1: //出口朝右
+                note->moveBy(note->noteSpeed_,0);
+                break;
+            case 2:
+                note->moveBy(0,note->noteSpeed_);
+                break;
+            case 3:
+                note->moveBy(-note->noteSpeed_,0);
+                break;
+            case 4:
+                note->moveBy(0,-note->noteSpeed_);
+                break;
+            default:
+                break;
+            }
+        } else if(gameMap[mapBoundedPos_.y()][mapBoundedPos_.x()]->getBlockContent() == 3){
+            typo__ = 3;
+            cutterToMove = cutters_.value(mapBoundedPos_,nullptr);
+            if (cutterToMove == nullptr){
+                // start from pos2
+                QList<QPoint> findCutterList= {QPoint(0,1),QPoint(0,-1),QPoint(1,0),QPoint(-1,0)};
+                for (auto point : findCutterList) {
+                    cutterToMove = cutters_.value(point+pressedPos_,nullptr);
+                    if (cutterToMove != nullptr && cutterToMove->getPos_2() == mapBoundedPos_) break;
+                }
+            }
+            if (cutterToMove == nullptr){
+                QMessageBox::critical(this,"ERROR","ERROR!");
+                continue;
+            }
+            switch (cutterToMove->getDir()) {
+            case 1: //出口朝右
+                note->moveBy(note->noteSpeed_,0);
+                break;
+            case 2:
+                note->moveBy(0,note->noteSpeed_);
+                break;
+            case 3:
+                note->moveBy(-note->noteSpeed_,0);
+                break;
+            case 4:
+                note->moveBy(0,-note->noteSpeed_);
+                break;
+            default:
+                break;
+            }
+        } else if(gameMap[mapBoundedPos_.y()][mapBoundedPos_.x()]->getBlockContent() == 5){
+            typo__ = 4;
+            ssToMove = speedSwitchers_.value(mapBoundedPos_);
+            switch (ssToMove->getDir()) {
+            case 1: //出口朝右
+                note->moveBy(note->noteSpeed_,0);
+                break;
+            case 2:
+                note->moveBy(0,note->noteSpeed_);
+                break;
+            case 3:
+                note->moveBy(-note->noteSpeed_,0);
+                break;
+            case 4:
+                note->moveBy(0,-note->noteSpeed_);
+                break;
+            default:
+                break;
+            }
+        }
+        // 判定并重新绑定方块的函数！绑定到新的方块前看看它有没有被占据；如果没有，绑完修改新旧物体的occupied属性
+        // 结合新的绑定位置的方块，进行析构或者跳转
+        if (abs(note->boundingRect().center().x()-(note->boundedPos_.x()+BLOCK_WIDTH/2)) > BLOCK_WIDTH/2
+            || abs(note->boundingRect().center().y()-(note->boundedPos_.y()+BLOCK_HEIGHT/2)) > BLOCK_HEIGHT/2){
+            QPoint nextBoundPos_; // 这是在地图中的位置！
+            switch (note->speedDir_) {
+            case 1:
+                nextBoundPos_ = mapBoundedPos_ + QPoint(1,0);
+                break;
+            case 2:
+                nextBoundPos_ = mapBoundedPos_ + QPoint(0,1);
+                break;
+            case 3:
+                nextBoundPos_ = mapBoundedPos_ + QPoint(-1,0);
+                break;
+            case 4:
+                nextBoundPos_ = mapBoundedPos_ + QPoint(0,-1);
+                break;
+            }
+            if (nextBoundPos_.x() < 0 || nextBoundPos_.y() < 0){
+                continue;
+            } else if(gameMap[nextBoundPos_.y()][nextBoundPos_.x()]->occupied){
+                switch (gameMap[nextBoundPos_.y()][nextBoundPos_.x()]->getBlockContent()) {
+                case belt:{
+                    QSharedPointer<Belt> newBoundBelt = belts_.value(nextBoundPos_);
+                    if (newBoundBelt->occupied){
+                        continue;
+                    }
+                    switch (newBoundBelt->getDir()%4) {
+                    case 1:
+                        if (note->speedDir_ == 1){
+                            note->boundedPos_ = newBoundBelt->getPos();
+                            newBoundBelt->occupied = true;
+                            switch (typo__) {
+                            case 1:
+                                beltToMove_->occupied = false;
+                                break;
+                            case 2:
+                                composerToMove->occupied = false;
+                                break;
+                            case 3:
+                                cutterToMove->occupied = false;
+                                break;
+                            case 4:
+                                ssToMove->occupied = false;
+                                break;
+                            default:
+                                break;
+                            }
+                        }
+                        break;
+                    case 2:
+                        if (note->speedDir_ == 3){
+                            note->boundedPos_ = newBoundBelt->getPos();
+                            newBoundBelt->occupied = true;
+                            switch (typo__) {
+                            case 1:
+                                beltToMove_->occupied = false;
+                                break;
+                            case 2:
+                                composerToMove->occupied = false;
+                                break;
+                            case 3:
+                                cutterToMove->occupied = false;
+                                break;
+                            case 4:
+                                ssToMove->occupied = false;
+                                break;
+                            default:
+                                break;
+                            }
+                        }
+                        break;
+                    case 3:
+                        if (note->speedDir_ == 2){
+                            note->boundedPos_ = newBoundBelt->getPos();
+                            newBoundBelt->occupied = true;
+                            switch (typo__) {
+                            case 1:
+                                beltToMove_->occupied = false;
+                                break;
+                            case 2:
+                                composerToMove->occupied = false;
+                                break;
+                            case 3:
+                                cutterToMove->occupied = false;
+                                break;
+                            case 4:
+                                ssToMove->occupied = false;
+                                break;
+                            default:
+                                break;
+                            }
+                        }
+                        break;
+                    case 4:
+                        if (note->speedDir_ == 4){
+                            note->boundedPos_ = newBoundBelt->getPos();
+                            newBoundBelt->occupied = true;
+                            switch (typo__) {
+                            case 1:
+                                beltToMove_->occupied = false;
+                                break;
+                            case 2:
+                                composerToMove->occupied = false;
+                                break;
+                            case 3:
+                                cutterToMove->occupied = false;
+                                break;
+                            case 4:
+                                ssToMove->occupied = false;
+                                break;
+                            default:
+                                break;
+                            }
+                        }
+                        break;
+                    default:
+                        break;
+                    }
+                    break;
+                }
+                case composer:{
+                    continue;
+                }
+                case cutter:{
+                    Cutter *newBoundCutter = cutters_.value(nextBoundPos_);
+                    if (newBoundCutter->occupied || newBoundCutter->getDir() != note->speedDir_){
+                        continue;
+                    } else{
+                        switch (typo__) {
+                        case 1:
+                            beltToMove_->occupied = false;
+                            break;
+                        case 2:
+                            composerToMove->occupied = false;
+                            break;
+                        case 3:
+                            cutterToMove->occupied = false;
+                            break;
+                        case 4:
+                            ssToMove->occupied = false;
+                            break;
+                        default:
+                            break;
+                        }
+
+                        mainScene->removeItem(note.data());
+                        note->noteDiscard();
+                        notes_.removeAt(i);
+                        notePool.release(note);
+
+                        newBoundCutter->generateNote(note->noteType);
+                    }
+                    break;
+                }
+                case bin:{
+                    switch (typo__) {
+                    case 1:
+                        beltToMove_->occupied = false;
+                        break;
+                    case 2:
+                        composerToMove->occupied = false;
+                        break;
+                    case 3:
+                        cutterToMove->occupied = false;
+                        break;
+                    case 4:
+                        ssToMove->occupied = false;
+                        break;
+                    default:
+                        break;
+                    }
+
+                    mainScene->removeItem(note.data());
+                    notes_.removeAt(i);
+                    note->noteDiscard();
+                    notePool.release(note);
+                    break;
+                }
+                case speedSwitcher:{
+                    SpeedSwitcher *newBoundSS = speedSwitchers_.value(nextBoundPos_);
+                    if (newBoundSS->occupied || newBoundSS->getDir() != note->speedDir_) continue;
+
+                    newBoundSS->occupied = true;
+                    switch (typo__) {
+                    case 1:
+                        beltToMove_->occupied = false;
+                        break;
+                    case 2:
+                        composerToMove->occupied = false;
+                        break;
+                    case 3:
+                        cutterToMove->occupied = false;
+                        break;
+                    case 4:
+                        ssToMove->occupied = false;
+                        break;
+                    default:
+                        break;
+                    }
+                    switch (note->speedDir_) {
+                    case 1: //出口朝右
+                        note->moveBy(BLOCK_WIDTH,0);
+                        break;
+                    case 2:
+                        note->moveBy(0,BLOCK_HEIGHT);
+                        break;
+                    case 3:
+                        note->moveBy(-BLOCK_WIDTH,0);
+                        break;
+                    case 4:
+                        note->moveBy(0,-BLOCK_HEIGHT);
+                        break;
+                    }
+                    break;
+                }
+                default:
+                    break;
+                }
+            } else{
+                continue;
+            }
+        }
+    }
 }
 
 

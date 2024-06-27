@@ -41,7 +41,9 @@ public:
     void mouseReleaseEvent(QMouseEvent *) override;
     void mouseMoveEvent(QMouseEvent *) override;
 
+    static int initSpeed;
     static MyObjectPool<Note> notePool;
+    static void setNoteToScene(QSharedPointer<Note>);
 
     friend Infomation;
     friend Shop;
@@ -58,7 +60,9 @@ private slots:
 
     void on_InfoBtn__clicked();
 
-    void updateGame(){this->update();}
+    void updateGame();
+
+    void noteMove();
 
     void on_BeltTool__clicked();
 
@@ -82,8 +86,9 @@ private:
     QPoint mapFromViewToGameMap(QPoint viewPos);
 
     Ui::PlayWindow *ui;
-    QGraphicsScene *mainScene;
+    static QGraphicsScene *mainScene;
     QTimer *updateTimer;
+    QTimer *noteMoveTimer;
     QGraphicsTextItem *ssnumTextItem;
 
     Congratulation *cGWindow;
@@ -103,7 +108,6 @@ private:
     QPoint lastPos_;
 
     // 私有静态数据成员。。。好像没必要，最后再改
-    static int initSpeed;
     static int composerLevel;
     static int cutterLevel;
     static enum ttype_ {belt = 1, composer, cutter, bin, speedSwitcher} toolType;
@@ -118,6 +122,7 @@ private:
     static int Empty_received;
     static int speedSwitcherNum;
 
+    static QList<QSharedPointer<Note>> notes_;
     static QHash<QPoint, QSharedPointer<Belt>> belts_;
     static QHash<QPoint, Composer*> composers_;
     static QHash<QPoint, Cutter*> cutters_;

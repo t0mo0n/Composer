@@ -15,14 +15,14 @@ public:
     QPoint getPos_1(){return cutterPos_1;}
     QPoint getPos_2(){return cutterPos_2;}
 
-    // void noteCutting(); TODO
+    void generateNote(int noteCuttedType);
 
     bool occupied;
 
 private:
     QPoint cutterPos_1;
     QPoint cutterPos_2;
-    enum direction {right = 1,down,left,up} cutterDir_; // 注意，这里的方向是入口方向！和别的不一样！
+    enum direction {right = 1,down,left,up} cutterDir_; // 出口方向
     enum levels { lv1 = 1, lv2} cutterLv_;
     QPixmap cutterPix;
 };
