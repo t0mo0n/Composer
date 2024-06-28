@@ -4,7 +4,7 @@
 
 SpeedSwitcher::SpeedSwitcher(QPoint pos) {
     ssPos_ = pos;
-
+    occupied = false;
     changeDir_(right);
 }
 

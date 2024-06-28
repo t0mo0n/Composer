@@ -10,8 +10,6 @@ public:
     QRectF boundingRect()const override;
     void paint(QPainter *painter, const QStyleOptionGraphicsItem *op, QWidget *widget) override;
 
-    // void discardNotes();
-
 private:
     QPoint binPos_;
 

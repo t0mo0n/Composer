@@ -4,6 +4,7 @@
 
 void Belt::initBelt(int initDir, QPoint pos) {
     beltPos_ = pos;
+    occupied = false;
 
     changeDir_(initDir); // 初始方向仅四个(1~4),也就是四个最基本的方向
 }

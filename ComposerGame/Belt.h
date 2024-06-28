@@ -9,16 +9,18 @@ public:
     Belt(){
         // occupied = false;
     }
+    ~Belt(){};
     void initBelt(int initDir, QPoint pos);
     QRectF boundingRect()const override;
     void paint(QPainter *painter, const QStyleOptionGraphicsItem *op, QWidget *widget) override;
 
     void deleteBelt();
 
+    QPoint getPos() { return beltPos_;}
     int getDir(){ return beltDir_;}
     void changeDir_(int dir);
 
-    bool occupied;
+    bool occupied; // 这是对于音符的属性
 
 private:
     enum direction{LeftToRight = 1, RightToLeft,UpToDown,DownToUp,LeftToUp,RightToUp,UpToLeft,DownToLeft,
