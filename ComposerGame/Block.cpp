@@ -17,6 +17,12 @@ Block::Block(int type) {
     bContent = empty;
 }
 
+Block::~Block()
+{
+    bType = (enum blockType_)0;
+    bContent = (enum blockContent)0;
+}
+
 QRectF Block::boundingRect() const
 {
     return QRectF(blockPos_.x(),blockPos_.y(),BLOCK_WIDTH,BLOCK_HEIGHT);

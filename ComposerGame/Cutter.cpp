@@ -1,14 +1,28 @@
 #include "Cutter.h"
 #include <QPainter>
+#include <QTimer>
 #include "Block.h"
+#include "Note.h"
+#include "PlayWindow.h"
 
 
 Cutter::Cutter(int level, QPoint pos_)
 {
     occupied = false;
+    noteToCutType = 0;
     cutterLv_ = (enum levels) level;
     cutterPos_1 = pos_;
     changeDir_(right);
+
+    generateTimer = new QTimer();
+    connect(generateTimer,&QTimer::timeout,this,&Cutter::generateNote_slot);
+}
+
+Cutter::~Cutter()
+{
+    occupied = false;
+    delete generateTimer;
+    generateTimer = nullptr;
 }
 
 QRectF Cutter::boundingRect() const
@@ -55,7 +69,93 @@ void Cutter::changeDir_(int dir)
     update();
 }
 
-void Cutter::generateNote(int noteCuttedType)
+void Cutter::generateNote(int noteCuttedType,int v)
 {
-    // TODO
+    if (occupied){
+        return;
+    }
+    noteToCutType = noteCuttedType;
+    noteInitSpeed = v;
+    if (cutterLv_ == 2){
+        generateTimer->start(1500);
+    } else{
+        generateTimer->start(3000);
+    }
+}
+
+void Cutter::generateNote_slot()
+{
+    switch (noteToCutType) {
+    case 0:{
+        occupied = 1;
+        QSharedPointer<Note> newNote_Empty = PlayWindow::notePool->acquire();
+        newNote_Empty->initNote(noteInitSpeed,0,cutterPos_1);
+        PlayWindow::setNoteToScene(newNote_Empty);
+        break;
+    }
+    case 1:{
+        occupied = 2;
+        QSharedPointer<Note> newNote_1 = PlayWindow::notePool->acquire();
+        QSharedPointer<Note> newNote_2 = PlayWindow::notePool->acquire();
+        newNote_1->initNote(noteInitSpeed,2,cutterPos_1);
+        newNote_2->initNote(noteInitSpeed,3,cutterPos_2);
+        PlayWindow::setNoteToScene(newNote_1);
+        PlayWindow::setNoteToScene(newNote_2);
+        break;
+    }
+    case 2:{
+        occupied = 2;
+        QSharedPointer<Note> newNote_1 = PlayWindow::notePool->acquire();
+        QSharedPointer<Note> newNote_2 = PlayWindow::notePool->acquire();
+        newNote_1->initNote(noteInitSpeed,4,cutterPos_1);
+        newNote_2->initNote(noteInitSpeed,5,cutterPos_2);
+        PlayWindow::setNoteToScene(newNote_1);
+        PlayWindow::setNoteToScene(newNote_2);
+        break;
+    }
+    case 3:{
+        occupied = 2;
+        QSharedPointer<Note> newNote_1 = PlayWindow::notePool->acquire();
+        QSharedPointer<Note> newNote_2 = PlayWindow::notePool->acquire();
+        newNote_1->initNote(noteInitSpeed,6,cutterPos_1);
+        newNote_2->initNote(noteInitSpeed,7,cutterPos_2);
+        PlayWindow::setNoteToScene(newNote_1);
+        PlayWindow::setNoteToScene(newNote_2);
+        break;
+    }
+    case 4:{
+        occupied = 1;
+        QSharedPointer<Note> newNote = PlayWindow::notePool->acquire();
+        newNote->initNote(noteInitSpeed,4,cutterPos_1);
+        PlayWindow::setNoteToScene(newNote);
+        break;
+    }
+    case 5:{
+        occupied = 2;
+        QSharedPointer<Note> newNote_1 = PlayWindow::notePool->acquire();
+        QSharedPointer<Note> newNote_2 = PlayWindow::notePool->acquire();
+        newNote_1->initNote(noteInitSpeed,5,cutterPos_1);
+        newNote_2->initNote(noteInitSpeed,5,cutterPos_2);
+        PlayWindow::setNoteToScene(newNote_1);
+        PlayWindow::setNoteToScene(newNote_2);
+        break;
+    }
+    case 6:{
+        occupied = 1;
+        QSharedPointer<Note> newNote = PlayWindow::notePool->acquire();
+        newNote->initNote(noteInitSpeed,6,cutterPos_1);
+        PlayWindow::setNoteToScene(newNote);
+        break;
+    }
+    case 7:{
+        occupied = 1;
+        QSharedPointer<Note> newNote = PlayWindow::notePool->acquire();
+        newNote->initNote(noteInitSpeed,7,cutterPos_1);
+        PlayWindow::setNoteToScene(newNote);
+        break;
+    }
+    default:
+        break;
+    }
+    generateTimer->stop();
 }

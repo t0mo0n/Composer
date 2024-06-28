@@ -23,6 +23,13 @@ Composer::Composer(int level,int blockT,QPoint pos_)
     }
 }
 
+Composer::~Composer()
+{
+    generateTimer->stop();
+    delete generateTimer;
+    generateTimer = nullptr;
+}
+
 QRectF Composer::boundingRect() const
 {
     return QRectF(composerPos_.x(),composerPos_.y(),BLOCK_WIDTH,BLOCK_HEIGHT);
@@ -60,9 +67,11 @@ void Composer::generateNote()
     // 判断是否已经有音符，如果没有，在自己这里生成，修改occupied值然后初始化即可，不用做别的事
     if (occupied){
         return;
+    } else if(cGType_ == normal_block){
+        return;
     } else{
         occupied = true;
-        QSharedPointer<Note> noteNew_ = PlayWindow::notePool.acquire();
+        QSharedPointer<Note> noteNew_ = PlayWindow::notePool->acquire();
         if (cGType_ == inspire_block){
             noteNew_->initNote(PlayWindow::initSpeed,1,composerPos_);
         } else{

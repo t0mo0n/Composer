@@ -7,7 +7,9 @@ class Composer : public QGraphicsObject
 {
     Q_OBJECT
 public:
+    Composer(){};
     Composer(int level,int blockT,QPoint pos_);
+    ~Composer();
     QRectF boundingRect()const override;
     void paint(QPainter *painter, const QStyleOptionGraphicsItem *op, QWidget *widget) override;
 
@@ -17,7 +19,7 @@ public:
     bool occupied;
 
 private slots:
-    void generateNote(); // TODO
+    void generateNote();
 
 private:
     QPoint composerPos_;

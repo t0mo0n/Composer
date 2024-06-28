@@ -11,6 +11,7 @@ class Block : public QGraphicsItem
 {
 public:
     Block(int type);
+    ~Block();
 
     QRectF boundingRect()const override;
     void paint(QPainter *painter, const QStyleOptionGraphicsItem *op, QWidget *widget) override;

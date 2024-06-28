@@ -42,7 +42,7 @@ public:
     void mouseMoveEvent(QMouseEvent *) override;
 
     static int initSpeed;
-    static MyObjectPool<Note> notePool;
+    static MyObjectPool<Note> *notePool;
     static void setNoteToScene(QSharedPointer<Note>);
 
     friend Infomation;

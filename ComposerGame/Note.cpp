@@ -1,6 +1,7 @@
 #include "Note.h"
 #include <QPainter>
 #include "Block.h"
+#include "PlayWindow.h"
 
 Note::Note() {
     // TODO：要干啥？
@@ -8,7 +9,7 @@ Note::Note() {
 
 QRectF Note::boundingRect() const
 {
-    return QRectF(notePos_.x(),notePos_.y(),NOTE_WIDTH,NOTE_HEIGHT);
+    return QRectF(0,0,NOTE_WIDTH,NOTE_HEIGHT);
 }
 
 void Note::paint(QPainter *painter, const QStyleOptionGraphicsItem *op, QWidget *widget)
@@ -45,10 +46,13 @@ void Note::paint(QPainter *painter, const QStyleOptionGraphicsItem *op, QWidget 
 
 void Note::initNote(int s, int type, QPoint _pos)
 {
+    typo_ = 0;
+    stop = false;
     noteSpeed_ = s;
     noteType = (enum types)type;
     boundedPos_ = _pos;
     notePos_ = QPoint(boundedPos_.x()+(BLOCK_WIDTH-NOTE_WIDTH)/2,boundedPos_.y()+(BLOCK_HEIGHT-NOTE_HEIGHT)/2);
+    setPos(notePos_);
     // dir是生成方块的出口朝向！
     // 下面这个是对应于移动的逻辑的位置定义；
     // if (_dir == QPoint(1,0)){
@@ -62,6 +66,15 @@ void Note::initNote(int s, int type, QPoint _pos)
     // }
 }
 
+void Note::changeSpeed()
+{
+    if (noteSpeed_ == PlayWindow::initSpeed){
+        noteSpeed_ = 1;
+    } else{
+        noteSpeed_ = PlayWindow::initSpeed;
+    }
+}
+
 void Note::moveBy(qreal dx, qreal dy)
 {
     if (dx > 0 && dy == 0){
@@ -73,12 +86,13 @@ void Note::moveBy(qreal dx, qreal dy)
     } else{
         speedDir_ = up;
     }
-    notePos_ = notePos_+QPoint(dx,dy);
     this->QGraphicsItem::moveBy(dx,dy);
 }
 
 void Note::noteDiscard()
 {
+    typo_ = 0;
+    stop = false;
     noteSpeed_ = 0;
     noteType = (enum types)0;
 }

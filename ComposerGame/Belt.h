@@ -9,6 +9,7 @@ public:
     Belt(){
         // occupied = false;
     }
+    ~Belt(){};
     void initBelt(int initDir, QPoint pos);
     QRectF boundingRect()const override;
     void paint(QPainter *painter, const QStyleOptionGraphicsItem *op, QWidget *widget) override;
