@@ -16,7 +16,7 @@ public:
     QSharedPointer<T> acquire();
     void release(QSharedPointer<T>& object);
 
-    int &get_pool_size(){ return pool_size;} // 在文件读入里，用来设置最大大小
+    int get_pool_size(){ return pool_size;} // 在文件读入里，用来设置最大大小
 
 private:
     QList<QSharedPointer<T>> pool;

@@ -298,6 +298,29 @@
     </size>
    </property>
   </widget>
+  <widget class="QToolButton" name="MuteBtn_">
+   <property name="geometry">
+    <rect>
+     <x>20</x>
+     <y>820</y>
+     <width>41</width>
+     <height>41</height>
+    </rect>
+   </property>
+   <property name="text">
+    <string>...</string>
+   </property>
+   <property name="icon">
+    <iconset resource="res.qrc">
+     <normaloff>:/img/resource/sound_on.png</normaloff>:/img/resource/sound_on.png</iconset>
+   </property>
+   <property name="iconSize">
+    <size>
+     <width>36</width>
+     <height>36</height>
+    </size>
+   </property>
+  </widget>
  </widget>
  <resources>
   <include location="res.qrc"/>

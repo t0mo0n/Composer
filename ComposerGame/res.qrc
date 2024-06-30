@@ -1,5 +1,21 @@
 <RCC>
-    <qresource prefix="/music"/>
+    <qresource prefix="/music">
+        <file>resource/Canon-and-Gigue-in-D-major.mp3</file>
+        <file>resource/Do.m4a</file>
+        <file>resource/Fa.m4a</file>
+        <file>resource/La.m4a</file>
+        <file>resource/Re.m4a</file>
+        <file>resource/Rondo-Alla-Turca-piano-sonata-no.mp3</file>
+        <file>resource/Si.m4a</file>
+        <file>resource/Sol.m4a</file>
+        <file>resource/My-love.mp3</file>
+        <file>resource/Arabesque-No1-Andantino-con-moto.mp3</file>
+        <file>resource/Empty.mp3</file>
+        <file>resource/The-seasons-November-Troika.mp3</file>
+        <file>resource/If-I-Can-Stop-One-Heart-From-Breaking.mp3</file>
+        <file>resource/Mi.m4a</file>
+        <file>resource/Florence.mp3</file>
+    </qresource>
     <qresource prefix="/img">
         <file>resource/EntranceBackground.png</file>
         <file>resource/Icon.png</file>
@@ -71,5 +87,8 @@
         <file>resource/ssLeft.png</file>
         <file>resource/ssRight.png</file>
         <file>resource/ssUp.png</file>
+        <file>resource/Center_Chap1.svg</file>
+        <file>resource/Center_Chap2.svg</file>
+        <file>resource/Center_Chap3.svg</file>
     </qresource>
 </RCC>

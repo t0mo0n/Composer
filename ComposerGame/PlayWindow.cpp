@@ -5,6 +5,10 @@
 #include <QPainter>
 #include <QRandomGenerator>
 #include <QTimer>
+#include <QFileDialog>
+#include <QJsonObject>
+#include <QJsonArray>
+#include <QJsonDocument>
 #include "GlobalState.h"
 #include "MyObjectPool.h"
 
@@ -30,7 +34,7 @@ QHash<QPoint, Bin*> PlayWindow::bins_;
 QHash<QPoint, SpeedSwitcher*> PlayWindow::speedSwitchers_;
 QGraphicsScene *PlayWindow::mainScene = nullptr;
 
-PlayWindow::PlayWindow(QWidget *parent,int chapnum,QString archiveFileName)
+PlayWindow::PlayWindow(const QString &archiveFileName,int chapnum,QWidget *parent)
     : QGraphicsView(parent)
     , ui(new Ui::PlayWindow)
 {
@@ -48,14 +52,30 @@ PlayWindow::PlayWindow(QWidget *parent,int chapnum,QString archiveFileName)
     this->setGeometry(0,0,PW_WIDTH,PW_HEIGHT);
 
     bgGenerateNum = QRandomGenerator::global()->bounded(1, 4);
-    chapterNum = chapnum; //这是非导入存档的生成方式，如果导入了存档，后面还会进行更改
+    chapterNum = chapnum; // 非存档导入的关卡数初始化方法
+    chapFinished = false;
 
     notePool = new MyObjectPool<Note>(100);
+    PlayWindowBGM = new QMediaPlayer(this);
+    pwBgmOutput = new QAudioOutput(this);
+    PlayWindowBGM->setAudioOutput(pwBgmOutput);
+    switch (bgGenerateNum) {
+    case 1:
+        PlayWindowBGM->setSource(QUrl("qrc:/music/resource/My-love.mp3"));
+        break;
+    case 2:
+        PlayWindowBGM->setSource(QUrl("qrc:/music/resource/If-I-Can-Stop-One-Heart-From-Breaking.mp3"));
+        break;
+    case 3:
+        PlayWindowBGM->setSource(QUrl("qrc:/music/resource/Florence.mp3"));
+        break;
+    }
 
     changeStyleSheet(ui->ShopBtn_);
     changeStyleSheet(ui->InfoBtn_);
     changeStyleSheet(ui->SaveBtn_);
     changeStyleSheet(ui->HelpBtn_);
+    changeStyleSheet(ui->MuteBtn_);
 
     changeStyleSheet(ui->BeltTool_);
     changeStyleSheet(ui->ComposerTool_);
@@ -63,16 +83,10 @@ PlayWindow::PlayWindow(QWidget *parent,int chapnum,QString archiveFileName)
     changeStyleSheet(ui->BinTool_);
     changeStyleSheet(ui->SpeedMachineTool_);
 
-    // 测试通关界面：
-    // cGWindow = new Congratulation(this);
-    // cGWindow->exec();
-
-    QFile *archiveFile = nullptr;
     if (archiveFileName == ""){
         initMap();
     } else{
-        // archiveFile = new QFile(...name);
-        initMap(archiveFile);// 打开对应存档文件
+        initMap(archiveFileName);// 打开对应存档文件
     }
 
     // 完成文字的显示，显示内容就是目前有的SpeedMachine数量
@@ -89,6 +103,9 @@ PlayWindow::PlayWindow(QWidget *parent,int chapnum,QString archiveFileName)
     toPut = false;
     toSpin = false;
     toDelete = false;
+
+    PlayWindowBGM->play();
+    PlayWindowBGM->setLoops(-1);
 
     updateTimer = new QTimer();
     connect(updateTimer,&QTimer::timeout, this,&PlayWindow::updateGame);
@@ -116,7 +133,13 @@ void PlayWindow::mousePressEvent(QMouseEvent *event)
     if (pressedPos_.x() < 0 || pressedPos_.y() < 0){
         return;
     }
-    if (gameMap[pressedPos_.y()][pressedPos_.x()]->occupied){
+    if (gameMap[pressedPos_.y()][pressedPos_.x()]->getBlockContent() == 6){
+        // 准备调用中心演奏函数
+        if (pressedPos_.y() >= 10 && pressedPos_.y() <= 8+gameCenter->getCenterHeight()
+            && pressedPos_.x() >= 22 && pressedPos_.x() <= 20+gameCenter->getCenterWidth()){
+            toPlay = true;
+        } else {toPlay = false;}
+    } else if (gameMap[pressedPos_.y()][pressedPos_.x()]->occupied){
         // 左键对组件进行旋转；右键则是删除
         if (event->button() == Qt::LeftButton){
             // 准备旋转
@@ -130,7 +153,7 @@ void PlayWindow::mousePressEvent(QMouseEvent *event)
         if (event->button() == Qt::LeftButton){
             toPut = true;
             if (toolType == belt){
-                // TODO :开始放置轨道，记录位置(以此来判断下一轨道放置的方向)
+                // 开始放置轨道，记录位置(以此来判断下一轨道放置的方向)
                 QSharedPointer<Belt> new_belt = beltPool.acquire();
                 new_belt->initBelt(1,mapFromModeltoReal(pressedPos_));
                 belts_.insert(pressedPos_,new_belt);
@@ -148,6 +171,23 @@ void PlayWindow::mouseReleaseEvent(QMouseEvent *event)
 {
     QPoint releasedPoint = mapFromViewToGameMap(event->pos());
     if (releasedPoint.x() < 0 || releasedPoint.y() < 0){
+        toPlay = false;
+        toSpin = false;
+        toDelete = false;
+        toPut = false;
+        return;
+    }
+    if (toPlay){
+        if (releasedPoint.y() >= 10 && releasedPoint.y() <= 8+gameCenter->getCenterHeight()
+            && releasedPoint.x() >= 22 && releasedPoint.x() <= 20+gameCenter->getCenterWidth()){
+            // 演奏演示音乐
+            if (chapterNum <= 3){
+                PlayWindowBGM->stop();
+                connect(gameCenter,&Center::playEnd,this,&PlayWindow::on_MuteBtn__clicked);
+                gameCenter->centerPlay(chapterNum);
+            }
+        }
+        toPlay = false;
         toSpin = false;
         toDelete = false;
         toPut = false;
@@ -155,7 +195,7 @@ void PlayWindow::mouseReleaseEvent(QMouseEvent *event)
     }
     if (releasedPoint == pressedPos_){
         if (toSpin){
-            // TODO :处理旋转
+            // 处理旋转
             QMutableListIterator<QSharedPointer<Note>> noteDeleter(notes_);
             while (noteDeleter.hasNext()) {
                 if (mapFromViewToGameMap(noteDeleter.next()->boundedPos_) == pressedPos_){
@@ -178,11 +218,13 @@ void PlayWindow::mouseReleaseEvent(QMouseEvent *event)
                 } else if(dir%2 == 0){
                     spinBelt->changeDir_(dir-1);
                 }
+                spinBelt->occupied = false;
                 break;
             }
             case composer:{
                 Composer *spinComposer = composers_.value(pressedPos_);
                 spinComposer->changeDir_(spinComposer->getDir()%4+1);
+                spinComposer->occupied = false;
                 break;
             }
             case cutter:{
@@ -193,18 +235,40 @@ void PlayWindow::mouseReleaseEvent(QMouseEvent *event)
                         spinCutter = cutters_.value(point+pressedPos_,nullptr);
                         if (spinCutter != nullptr && spinCutter->getPos_2() == mapFromModeltoReal(pressedPos_)) break;
                     }
+                    QMutableListIterator<QSharedPointer<Note>> noteDeleter2(notes_);
+                    while (noteDeleter2.hasNext()) {
+                        if (noteDeleter2.next()->boundedPos_ == spinCutter->getPos_1()){
+                            mainScene->removeItem(noteDeleter2.value().data());
+                            noteDeleter2.value()->noteDiscard();
+                            notePool->release(noteDeleter2.value());
+                            noteDeleter2.remove();
+                        }
+                    }
                     if (spinCutter == nullptr){
                         QMessageBox::critical(this,"出错","ERROR！");
+                        toPlay = false;
                         toSpin = false;
                         toDelete = false;
                         toPut = false;
                         return;
                     }
+                } else{
+                    QMutableListIterator<QSharedPointer<Note>> noteDeleter2(notes_);
+                    while (noteDeleter2.hasNext()) {
+                        if (noteDeleter2.next()->boundedPos_ == spinCutter->getPos_2()){
+                            mainScene->removeItem(noteDeleter2.value().data());
+                            noteDeleter2.value()->noteDiscard();
+                            notePool->release(noteDeleter2.value());
+                            noteDeleter2.remove();
+                        }
+                    }
                 }
+
                 int new_dir = spinCutter->getDir()%4+1;
                 switch (new_dir) {
                 case 1:
                     if (gameMap[pressedPos_.y()-1][pressedPos_.x()]->occupied){
+                        toPlay = false;
                         toSpin = false;
                         toDelete = false;
                         toPut = false;
@@ -214,6 +278,7 @@ void PlayWindow::mouseReleaseEvent(QMouseEvent *event)
                     break;
                 case 2:
                     if (gameMap[pressedPos_.y()][pressedPos_.x()+1]->occupied){
+                        toPlay = false;
                         toSpin = false;
                         toDelete = false;
                         toPut = false;
@@ -223,6 +288,7 @@ void PlayWindow::mouseReleaseEvent(QMouseEvent *event)
                     break;
                 case 3:
                     if (gameMap[pressedPos_.y()+1][pressedPos_.x()]->occupied){
+                        toPlay = false;
                         toSpin = false;
                         toDelete = false;
                         toPut = false;
@@ -232,6 +298,7 @@ void PlayWindow::mouseReleaseEvent(QMouseEvent *event)
                     break;
                 case 4:
                     if (gameMap[pressedPos_.y()][pressedPos_.x()-1]->occupied){
+                        toPlay = false;
                         toSpin = false;
                         toDelete = false;
                         toPut = false;
@@ -246,6 +313,7 @@ void PlayWindow::mouseReleaseEvent(QMouseEvent *event)
                 gameMap[oldCtPos2Maped.y()][oldCtPos2Maped.x()]->occupied = false;
                 gameMap[oldCtPos2Maped.y()][oldCtPos2Maped.x()]->setBlockContent(0);
                 spinCutter->changeDir_(new_dir);
+                spinCutter->occupied = 0;
                 QPoint newCtPos2Maped = mapFromViewToGameMap(spinCutter->getPos_2());
                 gameMap[newCtPos2Maped.y()][newCtPos2Maped.x()]->occupied = true;
                 gameMap[newCtPos2Maped.y()][newCtPos2Maped.x()]->setBlockContent(3);
@@ -255,13 +323,13 @@ void PlayWindow::mouseReleaseEvent(QMouseEvent *event)
             {
                 SpeedSwitcher *spinSS = speedSwitchers_.value(pressedPos_);
                 spinSS->changeDir_(spinSS->getDir()%4+1);
+                spinSS->occupied = false;
                 break;
             }
             default:
                 break;
             }
         } else if(toDelete){
-            // TODO :deal with this situation;
             QMutableListIterator<QSharedPointer<Note>> noteDeleter(notes_);
             while (noteDeleter.hasNext()) {
                 if (mapFromViewToGameMap(noteDeleter.next()->boundedPos_) == pressedPos_){
@@ -299,12 +367,32 @@ void PlayWindow::mouseReleaseEvent(QMouseEvent *event)
                         deleteCutter_ = cutters_.value(point+pressedPos_,nullptr);
                         if (deleteCutter_ != nullptr && deleteCutter_->getPos_2() == mapFromModeltoReal(pressedPos_)) break;
                     }
+                    QMutableListIterator<QSharedPointer<Note>> noteDeleter2(notes_);
+                    while (noteDeleter2.hasNext()) {
+                        if (noteDeleter2.next()->boundedPos_ == deleteCutter_->getPos_1()){
+                            mainScene->removeItem(noteDeleter2.value().data());
+                            noteDeleter2.value()->noteDiscard();
+                            notePool->release(noteDeleter2.value());
+                            noteDeleter2.remove();
+                        }
+                    }
                     if (deleteCutter_ == nullptr){
                         QMessageBox::critical(this,"出错","ERROR！");
+                        toPlay = false;
                         toSpin = false;
                         toDelete = false;
                         toPut = false;
                         return;
+                    }
+                } else{
+                    QMutableListIterator<QSharedPointer<Note>> noteDeleter2(notes_);
+                    while (noteDeleter2.hasNext()) {
+                        if (noteDeleter2.next()->boundedPos_ == deleteCutter_->getPos_2()){
+                            mainScene->removeItem(noteDeleter2.value().data());
+                            noteDeleter2.value()->noteDiscard();
+                            notePool->release(noteDeleter2.value());
+                            noteDeleter2.remove();
+                        }
                     }
                 }
                 mainScene->removeItem(deleteCutter_);
@@ -402,6 +490,7 @@ void PlayWindow::mouseReleaseEvent(QMouseEvent *event)
     } else if(toPut && toolType == belt){
         // 结束放置轨道，什么也不用做
     }
+    toPlay = false;
     toSpin = false;
     toDelete = false;
     toPut = false;
@@ -429,13 +518,15 @@ void PlayWindow::mouseMoveEvent(QMouseEvent *event)
                 if (dx == 1){
                     // 对应相对右移
                     // 目前位置放置从右来的基础传送带
-                    QSharedPointer<Belt> new_belt = beltPool.acquire();
-                    new_belt->initBelt(1,mapFromModeltoReal(nowPos_));
-                    belts_.insert(nowPos_,new_belt);
-                    new_belt.data()->setZValue(1);
-                    mainScene->addItem(new_belt.data());
-                    gameMap[nowPos_.y()][nowPos_.x()]->occupied = true;
-                    gameMap[nowPos_.y()][nowPos_.x()]->setBlockContent(1);
+                    if (need_new){
+                        QSharedPointer<Belt> new_belt = beltPool.acquire();
+                        new_belt->initBelt(1,mapFromModeltoReal(nowPos_));
+                        belts_.insert(nowPos_,new_belt);
+                        new_belt.data()->setZValue(1);
+                        mainScene->addItem(new_belt.data());
+                        gameMap[nowPos_.y()][nowPos_.x()]->occupied = true;
+                        gameMap[nowPos_.y()][nowPos_.x()]->setBlockContent(1);
+                    }
                     // 改变前一位置传送带的方向
                     QSharedPointer<Belt> last_belt = belts_.value(lastPos_);
                     if (last_belt->getDir() == 1 || last_belt->getDir() == 2){
@@ -521,9 +612,14 @@ void PlayWindow::closeEvent(QCloseEvent *event)
     delete gameCenter;
     gameCenter = nullptr;
 
+    PlayWindowBGM->stop();
+    delete PlayWindowBGM;
+    PlayWindowBGM = nullptr;
+
     // 重置静态成员变量
     composerLevel = 0;
     cutterLevel = 0;
+    speedSwitcherNum = 5;
     toolType = composer;
     Do_received = Re_received = Mi_received = Fa_received = So_received = La_received = Si_received = Empty_received = 0;
 
@@ -552,7 +648,7 @@ void PlayWindow::closeEvent(QCloseEvent *event)
     }
     bins_.clear();
 
-    speedSwitcherNum += speedSwitchers_.size();
+    // speedSwitcherNum += speedSwitchers_.size(); // 这是将ss数量保留，我暂时就不保留了，不然金币用不完
     QHashIterator<QPoint, SpeedSwitcher*> speedSwitcherIter(speedSwitchers_);
     while (speedSwitcherIter.hasNext()) {
         speedSwitcherIter.next();
@@ -582,7 +678,7 @@ void PlayWindow::closeEvent(QCloseEvent *event)
     delete mainScene;
     mainScene = nullptr;
     
-    emit playWindowClosed();
+    emit playWindowClosed(chapterNum,chapFinished);
     QGraphicsView::closeEvent(event);
 }
 
@@ -618,11 +714,11 @@ void PlayWindow::changeStyleSheet(QToolButton *btn)
         );
 }
 
-void PlayWindow::initMap(QFile *file)
+void PlayWindow::initMap(const QString& archiveFileName)
 {
-    if (file == nullptr){
+    if (archiveFileName == ""){
         // 画出中心方块；
-        gameCenter = new Center(GlobalState::centerLevel,QPoint((5+21)*BLOCK_WIDTH,(3.5+9)*BLOCK_HEIGHT));
+        gameCenter = new Center(GlobalState::centerLevel,QPoint((5+21)*BLOCK_WIDTH,(3.5+9)*BLOCK_HEIGHT),chapterNum);
         // 中心以外，画出地图方块，注意使用随机算法分配有用的块位置；
         int emptyR = QRandomGenerator::global()->bounded(3,6);
         int emptyC = QRandomGenerator::global()->bounded(4,7);
@@ -646,29 +742,251 @@ void PlayWindow::initMap(QFile *file)
             QList<QRect> regularBlocks2 = {QRect(37,17,emptyC,emptyR)};
             remainedAreaConstruct(totalArea,regularBlocks1,regularBlocks2);
         }
-        gameCenter->setZValue(3);
-        mainScene->addItem(gameCenter);
-        for (int i = 0; i < MAP_ROWS; i++){
-            for (int j = 0; j < MAP_COLS; j++){
-                if (gameMap[i][j] != nullptr){
-                    gameMap[i][j]->setZValue(0);
-                    mainScene->addItem(gameMap[i][j]);
-                }
-            }
-        }
-        for (int i = 0; i < gameCenter->getCenterHeight(); ++i) {
-            for (int j = 0; j < gameCenter->getCenterWidth(); ++j) {
-                gameMap[9+i][21+j]->occupied = true;
-                gameMap[9+i][21+j]->setBlockContent(6);
-            }
-        }
-
         // 建立对象池
         beltPool = MyObjectPool<Belt>(60);
 
     } else{
         // 读入地图与本局信息；
+        QFile archiveFile(archiveFileName);
+        if (!archiveFile.open(QIODevice::ReadOnly)) {
+            qWarning("无法打开保存文件");
+            return;
+        }
+
+        QByteArray saveData = archiveFile.readAll();
+        QJsonDocument loadDoc(QJsonDocument::fromJson(saveData));
+        QJsonObject jsonObject = loadDoc.object();
+
+        // 读取强化信息和全局信息
+        int nowCenterLv = jsonObject["nowCenterLv"].toInt();
+        composerLevel = jsonObject["composerLevel"].toInt();
+        cutterLevel = jsonObject["cutterLevel"].toInt();
+        initSpeed = jsonObject["initSpeed"].toInt();
+        Do_received = jsonObject["Do_received"].toInt();
+        Re_received = jsonObject["Re_received"].toInt();
+        Mi_received = jsonObject["Mi_received"].toInt();
+        Fa_received = jsonObject["Fa_received"].toInt();
+        So_received = jsonObject["So_received"].toInt();
+        La_received = jsonObject["La_received"].toInt();
+        Si_received = jsonObject["Si_received"].toInt();
+        Empty_received = jsonObject["Empty_received"].toInt();
+        speedSwitcherNum = jsonObject["speedSwitcherNum"].toInt();
+        chapterNum = jsonObject["chapterNum"].toInt();
+        int poolSize = jsonObject["beltPoolSize"].toInt();
+
+        // 画出中心方块；
+        gameCenter = new Center(nowCenterLv,QPoint((5+21)*BLOCK_WIDTH,(3.5+9)*BLOCK_HEIGHT),chapterNum);
+        // 读取地图信息
+        QJsonArray mapArray = jsonObject["map"].toArray();
+        for (int i = 0; i < mapArray.size(); ++i) {
+            QJsonObject blockObject = mapArray[i].toObject();
+            int type = blockObject["type"].toInt();
+            int content = blockObject["content"].toInt();
+            QJsonArray posArray = blockObject["position"].toArray();
+            int r = posArray[0].toInt();
+            int c = posArray[1].toInt();
+            gameMap[r][c] = new Block(type);
+            gameMap[r][c]->setBlockPos_(mapFromModeltoReal(QPoint(c,r)));
+            gameMap[r][c]->setBlockContent(content);
+            if (content != 0){
+                gameMap[r][c]->occupied = true;
+            }
+        }
+
+        // 读取组件信息
+        beltPool = MyObjectPool<Belt>(poolSize);
+        QJsonArray beltsArray = jsonObject["belts"].toArray();
+        for (int i = 0; i < beltsArray.size(); ++i) {
+            QJsonObject beltObject = beltsArray[i].toObject();
+            QJsonArray posArray = beltObject["position"].toArray();
+            int y = posArray[0].toInt();
+            int x = posArray[1].toInt();
+            int direction = beltObject["direction"].toInt();
+            // 根据位置和朝向恢复Belt
+            auto belt = beltPool.acquire();
+            belt->initBelt(1,QPoint(x,y));
+            belt->changeDir_(direction);
+            belts_.insert(mapFromViewToGameMap(QPoint(x,y)),belt);
+            belt.data()->setZValue(1);
+            mainScene->addItem(belt.data());
+        }
+
+        QJsonArray composersArray = jsonObject["composers"].toArray();
+        for (int i = 0; i < composersArray.size(); ++i) {
+            QJsonObject composerObject = composersArray[i].toObject();
+            QJsonArray posArray = composerObject["position"].toArray();
+            int y = posArray[0].toInt();
+            int x = posArray[1].toInt();
+            int direction = composerObject["direction"].toInt();
+            int composerLv = composerObject["level"].toInt();
+
+            QPoint posInMap = mapFromViewToGameMap(QPoint(x,y));
+            Composer *composer = new Composer(composerLv,gameMap[posInMap.y()][posInMap.x()]->getBlockType(),QPoint(x,y));
+            composer->changeDir_(direction);
+            composers_.insert(posInMap,composer);
+            composer->setZValue(3);
+            mainScene->addItem(composer);
+        }
+
+        QJsonArray cuttersArray = jsonObject["cutters"].toArray();
+        for (int i = 0; i < cuttersArray.size(); ++i) {
+            QJsonObject cutterObject = cuttersArray[i].toObject();
+            QJsonArray posArray = cutterObject["position"].toArray();
+            int y = posArray[0].toInt();
+            int x = posArray[1].toInt();
+            int direction = cutterObject["direction"].toInt();
+            int cutterLv = cutterObject["level"].toInt();
+
+            Cutter *cutter = new Cutter(cutterLv,QPoint(x,y));
+            cutter->changeDir_(direction);
+            cutters_.insert(mapFromViewToGameMap(QPoint(x,y)),cutter);
+            cutter->setZValue(3);
+            mainScene->addItem(cutter);
+        }
+
+        QJsonArray binsArray = jsonObject["bins"].toArray();
+        for (int i = 0; i < binsArray.size(); ++i) {
+            QJsonObject binObject = binsArray[i].toObject();
+            QJsonArray posArray = binObject["position"].toArray();
+            int y = posArray[0].toInt();
+            int x = posArray[1].toInt();
+
+            Bin *bin = new Bin(QPoint(x,y));
+            bins_.insert(mapFromViewToGameMap(QPoint(x,y)),bin);
+            bin->setZValue(3);
+            mainScene->addItem(bin);
+        }
+
+        QJsonArray speedSwitchersArray = jsonObject["speedSwitchers"].toArray();
+        for (int i = 0; i < speedSwitchersArray.size(); ++i) {
+            QJsonObject speedSwitcherObject = speedSwitchersArray[i].toObject();
+            QJsonArray posArray = speedSwitcherObject["position"].toArray();
+            int y = posArray[0].toInt();
+            int x = posArray[1].toInt();
+            int direction = speedSwitcherObject["direction"].toInt();
+
+            SpeedSwitcher *speedSwitcher = new SpeedSwitcher(QPoint(x,y));
+            speedSwitcher->changeDir_(direction);
+            speedSwitchers_.insert(mapFromViewToGameMap(QPoint(x,y)),speedSwitcher);
+            speedSwitcher->setZValue(3);
+            mainScene->addItem(speedSwitcher);
+        }
+
+        archiveFile.close();
     }
+
+    gameCenter->setZValue(3);
+    mainScene->addItem(gameCenter);
+    for (int i = 0; i < MAP_ROWS; i++){
+        for (int j = 0; j < MAP_COLS; j++){
+            if (gameMap[i][j] != nullptr){
+                gameMap[i][j]->setZValue(0);
+                mainScene->addItem(gameMap[i][j]);
+            }
+        }
+    }
+    for (int i = 0; i < gameCenter->getCenterHeight(); ++i) {
+        for (int j = 0; j < gameCenter->getCenterWidth(); ++j) {
+            gameMap[9+i][21+j]->occupied = true;
+            gameMap[9+i][21+j]->setBlockContent(6);
+        }
+    }
+}
+// 要保存和读取的是我已经在PlayWindow中添加的某些组件的某些重要信息. 具体来说，需要保存的有强化信息：composer等级，
+// cutter等级，initSpeed；全局信息：各种音符的received数量，speedSwitcherNum，关卡信息chapterNum；游戏局内地图信息，
+// 包括gameMap中两类Block方块的分布情况，center的等级；已经放置的各组件的信息，包括所有在belts_中的belt组件的位置和朝向，所有在
+// composers_中的composer组件的位置和朝向, 所有cutters_中cutter的位置和朝向, bins_中所有bin的位置, speedSwitchers_所有speedSwitcher的位置和朝向
+void PlayWindow::saveGame(const QString &saveFileName)
+{
+    QJsonObject saveData;
+
+    // 保存强化信息和全局信息
+    saveData["nowCenterLv"] = gameCenter->getLv();
+    saveData["composerLevel"] = composerLevel;
+    saveData["cutterLevel"] = cutterLevel;
+    saveData["initSpeed"] = initSpeed;
+    saveData["Do_received"] = Do_received;
+    saveData["Re_received"] = Re_received;
+    saveData["Mi_received"] = Mi_received;
+    saveData["Fa_received"] = Fa_received;
+    saveData["So_received"] = So_received;
+    saveData["La_received"] = La_received;
+    saveData["Si_received"] = Si_received;
+    saveData["Empty_received"] = Empty_received;
+    saveData["speedSwitcherNum"] = speedSwitcherNum;
+    saveData["chapterNum"] = chapterNum;
+    saveData["beltPoolSize"] = beltPool.get_pool_size();
+
+    // // 保存地图信息
+    QJsonArray mapArray;
+    for (int i = 0; i < MAP_ROWS; ++i) {
+        for (int j = 0; j < MAP_COLS; ++j) {
+            if (gameMap[i][j] != nullptr) {
+                QJsonObject blockObject;
+                blockObject["type"] = gameMap[i][j]->getBlockType();
+                blockObject["content"] = gameMap[i][j]->getBlockContent();
+                blockObject["position"] = QJsonArray{i, j};
+                mapArray.append(blockObject);
+            }
+        }
+    }
+    saveData["map"] = mapArray;
+
+    // 保存组件信息
+    QJsonArray beltsArray;
+    for (auto& belt : belts_) {
+        QJsonObject beltObject;
+        beltObject["position"] = QJsonArray{belt->getPos().y(),belt->getPos().x()};
+        beltObject["direction"] = belt->getDir();
+        beltsArray.append(beltObject);
+    }
+    saveData["belts"] = beltsArray;
+
+    QJsonArray composerArray;
+    for (auto& composer : composers_) {
+        QJsonObject composerObject;
+        composerObject["position"] = QJsonArray{composer->getPos().y(),composer->getPos().x()};
+        composerObject["direction"] = composer->getDir();
+        composerObject["level"] = composer->getLv();
+        composerArray.append(composerObject);
+    }
+    saveData["composers"] = composerArray;
+
+    QJsonArray cutterArray;
+    for (auto& cutter : cutters_) {
+        QJsonObject cutterObject;
+        cutterObject["position"] = QJsonArray{cutter->getPos_1().y(),cutter->getPos_1().x()};
+        cutterObject["direction"] = cutter->getDir();
+        cutterObject["level"] = cutter->getLv();
+        cutterArray.append(cutterObject);
+    }
+    saveData["cutters"] = cutterArray;
+
+    QJsonArray binArray;
+    for (auto& bin : bins_) {
+        QJsonObject binObject;
+        binObject["position"] = QJsonArray{bin->getPos().y(),bin->getPos().x()};
+        binArray.append(binObject);
+    }
+    saveData["bins"] = binArray;
+
+    QJsonArray speedSwitcherArray;
+    for (auto& speedSwitcher : speedSwitchers_) {
+        QJsonObject speedSwitcherObject;
+        speedSwitcherObject["position"] = QJsonArray{speedSwitcher->getPos().y(),speedSwitcher->getPos().x()};
+        speedSwitcherObject["direction"] = speedSwitcher->getDir();
+        speedSwitcherArray.append(speedSwitcherObject);
+    }
+    saveData["speedSwitchers"] = speedSwitcherArray;
+
+    // 写入文件
+    QFile saveFile(saveFileName);
+    if (!saveFile.open(QIODevice::WriteOnly)) {
+        qWarning("无法打开保存文件");
+        return;
+    }
+    saveFile.write(QJsonDocument(saveData).toJson());
+    saveFile.close();
 }
 
 void PlayWindow::remainedAreaConstruct(const QRect &totalArea, const QList<QRect> &regularBlocks1,const QList<QRect> &regularBlocks2)
@@ -749,6 +1067,10 @@ void PlayWindow::on_InfoBtn__clicked()
 
 void PlayWindow::updateGame()
 {
+    if (gameCenter->chapterFinished()){
+        chapFinished = true;
+        this->close();
+    }
     this->update();
 }
 
@@ -1194,6 +1516,7 @@ void PlayWindow::noteMove()
                         composerToMove->occupied = false;
                         break;
                     case 3:
+                        assert(cutterToMove != nullptr);// 莫名其妙的编译错误？
                         cutterToMove->occupied -= 1;
                         break;
                     case 4:
@@ -1219,6 +1542,41 @@ void PlayWindow::noteMove()
                 }
                 case 6:{
                     // 这是处理中心的情况
+                    note->stop = false;
+                    switch (typo__) {
+                    case 0:
+                        break;
+                    case 1:
+                        beltToMove_ = belts_.value(mapBoundedPos_);
+                        beltToMove_->occupied = false;
+                        break;
+                    case 2:
+                        composerToMove = composers_.value(mapBoundedPos_);
+                        composerToMove->occupied = false;
+                        break;
+                    case 3:
+                        cutterToMove->occupied -= 1;
+                        break;
+                    case 4:
+                        ssToMove = speedSwitchers_.value(mapBoundedPos_);
+                        ssToMove->occupied = false;
+                        break;
+                    }
+
+                    mainScene->removeItem(note.data());
+
+                    if ((nextBoundPos_.y() >= 10 && nextBoundPos_.y() <= 8+gameCenter->getCenterHeight())
+                        ||(nextBoundPos_.x() >= 22 && nextBoundPos_.x() <= 20+gameCenter->getCenterWidth())){
+                        // 成功被中心接收，计入数量并演奏音乐
+                        gameCenter->noteRecieved(note->noteType);
+                    } else{
+                        ;// 未成功接受，只会析构音符！
+                        // 这个特性要改也容易，把这个条件去掉就行，但是为了防止入口过多，还是判定一下吧
+                    }
+
+                    note->noteDiscard();
+                    notePool->release(note);
+                    notes_.removeAt(i);
                     break;
                 }
                 default:
@@ -1269,5 +1627,27 @@ void PlayWindow::on_ShopWindow__Closed()
     QString ssnumText = "remain:" + QString::number(speedSwitcherNum);
     ssnumTextItem->setPlainText(ssnumText);
     update();
+}
+
+
+void PlayWindow::on_MuteBtn__clicked()
+{
+    if (bgmPlaying){
+        bgmPlaying = false;
+        PlayWindowBGM->stop();
+    } else{
+        bgmPlaying = true;
+        PlayWindowBGM->play();
+        PlayWindowBGM->setLoops(-1);
+    }
+}
+
+
+void PlayWindow::on_SaveBtn__clicked()
+{
+    // QString appDir = QCoreApplication::applicationDirPath();
+    // QString targetPath = appDir + "/../files/Archives/save-your-archive.json";
+    QString saveFileName = QFileDialog::getSaveFileName(this, "存档", "F:/advProgramProject/Composer/files/Archives/save-your-archive.json");
+    saveGame(saveFileName);
 }
 

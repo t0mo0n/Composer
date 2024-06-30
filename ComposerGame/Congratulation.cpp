@@ -68,7 +68,7 @@ void Congratulation::paintEvent(QPaintEvent *event)
 void Congratulation::closeEvent(QCloseEvent *event)
 {
     // 检测到发出的已经完成升级的信号，自动关闭此窗口，并且结合目前的关卡情况,和全局状态，对下一关进行初始化;
-    // TODO
+    emit updateFinished(conChapter_+1);
     QDialog::closeEvent(event);
 }
 

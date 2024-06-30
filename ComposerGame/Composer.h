@@ -14,6 +14,8 @@ public:
     void paint(QPainter *painter, const QStyleOptionGraphicsItem *op, QWidget *widget) override;
 
     int getDir(){ return composerDir_;}
+    QPoint getPos() {return composerPos_;}
+    int getLv() {return composerLv_;}
     void changeDir_(int dir);
 
     bool occupied;

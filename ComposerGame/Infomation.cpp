@@ -46,13 +46,13 @@ void Infomation::displayText()
         chapterName = "D大调卡农";
         break;
     case 2:
-        chapterName = "在马车上";
+        chapterName = "十一月-雪橇";
         break;
     case 3:
-        chapterName = "Florence";
+        chapterName = "土耳其进行曲";
         break;
     }
-    GlobalState::makeText(chapterInfo_2,"第 "+QString::number(chapterInfo)+" 乐章 " + chapterName,"方正姚体",18,QColor(0,0,0),QPoint(570,75));
+    GlobalState::makeText(chapterInfo_2,"第 "+QString::number(chapterInfo)+" 乐章 " + chapterName,"方正姚体",16,QColor(0,0,0),QPoint(570,75));
     chapterInfo_2->show();
 
     QLabel *Do_recNum = new QLabel(this);
