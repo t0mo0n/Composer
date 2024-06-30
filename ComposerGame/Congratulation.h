@@ -23,6 +23,9 @@ protected:
     void paintEvent(QPaintEvent *event);
     void closeEvent(QCloseEvent *event);
 
+signals:
+    void updateFinished(int c);
+
 private slots:
     void on_BeltUpBtn__clicked();
     void on_CenterUpBtn__clicked();

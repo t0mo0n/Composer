@@ -7,6 +7,8 @@
 #include <QWidget>
 #include <QLabel>
 #include <QToolButton>
+#include <QMediaPlayer>
+#include <QAudioOutput>
 #include "GlobalState.h"
 #include "Shop.h"
 #include "PlayWindow.h"
@@ -33,7 +35,11 @@ protected:
 private slots:
     void on_ShopButton__clicked();
     void on_StartButton__clicked();
-    void on_PlayWindowClosed();
+
+    void on_PlayWindowClosed(int c,bool finished);
+    void on_UpdateFinished(int c);
+
+    void on_SaveButton__clicked();
 
 private:
     void changeStyleSheet(QToolButton *btn);
@@ -41,8 +47,12 @@ private:
 
     Ui::EntranceWindow *ui;
     QPainter* entrancePainter;
+    QMediaPlayer *entranceBGM;
+    QAudioOutput *eBgmOutput;
 
     PlayWindow *playWindow_;
     Shop *shopWindow_;
+    Congratulation *cgWindow_;
+
 };
 #endif // ENTRANCEWINDOW_H

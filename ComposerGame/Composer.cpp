@@ -17,9 +17,9 @@ Composer::Composer(int level,int blockT,QPoint pos_)
     generateTimer = new QTimer();
     connect(generateTimer,&QTimer::timeout,this,&Composer::generateNote);
     if (composerLv_ == 2){
-        generateTimer->start(1500);
+        generateTimer->start(2000);
     } else{
-        generateTimer->start(3000);
+        generateTimer->start(4000);
     }
 }
 

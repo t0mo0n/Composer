@@ -8,7 +8,7 @@
 
 Cutter::Cutter(int level, QPoint pos_)
 {
-    occupied = false;
+    occupied = 0;
     noteToCutType = 0;
     cutterLv_ = (enum levels) level;
     cutterPos_1 = pos_;
@@ -20,7 +20,7 @@ Cutter::Cutter(int level, QPoint pos_)
 
 Cutter::~Cutter()
 {
-    occupied = false;
+    occupied = 0;
     delete generateTimer;
     generateTimer = nullptr;
 }
@@ -132,12 +132,9 @@ void Cutter::generateNote_slot()
     }
     case 5:{
         occupied = 2;
-        QSharedPointer<Note> newNote_1 = PlayWindow::notePool->acquire();
-        QSharedPointer<Note> newNote_2 = PlayWindow::notePool->acquire();
-        newNote_1->initNote(noteInitSpeed,5,cutterPos_1);
-        newNote_2->initNote(noteInitSpeed,5,cutterPos_2);
-        PlayWindow::setNoteToScene(newNote_1);
-        PlayWindow::setNoteToScene(newNote_2);
+        QSharedPointer<Note> newNote = PlayWindow::notePool->acquire();
+        newNote->initNote(noteInitSpeed,5,cutterPos_1);
+        PlayWindow::setNoteToScene(newNote);
         break;
     }
     case 6:{

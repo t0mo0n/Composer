@@ -4,7 +4,13 @@
 #include <QLabel>
 #include<QDebug>
 #include <QFontDatabase>
+#include <QMediaPlayer>
+#include <QFile>
+#include <QJsonObject>
+#include <QJsonDocument>
+#include <QFileDialog>
 
+// 注意，config文件里得一开始就有基本的全局变量信息，不然程序会崩溃！这点在打包exe文件时要注意！
 EntranceWindow::EntranceWindow(QWidget *parent)
     : QWidget(parent)
     , ui(new Ui::EntranceWindow)
@@ -15,9 +21,26 @@ EntranceWindow::EntranceWindow(QWidget *parent)
     this->setWindowTitle("Composer~Welcome!");
     this->setFixedSize(EW_WIDTH,EW_HEIGHT);
 
-    globalState_ = GlobalState(); // 初始化全局状态，后续可能要修改为依靠配置文件改变全局状态
+    globalState_ = GlobalState(); // 初始化全局状态
+    QFile configFile("F:/advProgramProject/Composer/files/configFile.json");
+    if(!configFile.open(QIODevice::ReadOnly)){
+        qWarning("全局配置文件无法打开，请确认配置文件是否存在");
+    } else{
+        QByteArray configData = configFile.readAll();
+        QJsonDocument loadDoc(QJsonDocument::fromJson(configData));
+        QJsonObject configObj = loadDoc.object();
+        GlobalState::coins = configObj["coins"].toInt();
+        GlobalState::centerLevel = configObj["centerLv"].toInt();
+        GlobalState::noteBlockLevel = configObj["noteBlockLv"].toInt();
+        GlobalState::noteValue = configObj["noteValue"].toInt();
+    }
+    configFile.close();
 
     entrancePainter = new QPainter();
+    entranceBGM = new QMediaPlayer(this);
+    eBgmOutput = new QAudioOutput(this);
+    eBgmOutput->setVolume(1);
+    entranceBGM->setAudioOutput(eBgmOutput);
 
     displayText();
 
@@ -26,10 +49,28 @@ EntranceWindow::EntranceWindow(QWidget *parent)
     changeStyleSheet(ui->MusicButton_);
     changeStyleSheet(ui->SaveButton_);
     changeStyleSheet(ui->StartButton_);
+
+    entranceBGM->setSource(QUrl("qrc:/music/resource/Arabesque-No1-Andantino-con-moto.mp3"));
+    entranceBGM->setLoops(-1);
+    entranceBGM->play();
 }
 
 EntranceWindow::~EntranceWindow()
 {
+    QFile configFile("F:/advProgramProject/Composer/files/configFile.json");
+    if(!configFile.open(QIODevice::WriteOnly)){
+        qWarning("全局配置文件无法打开，请确认配置文件是否存在");
+        return;
+    }
+    QJsonObject configData;
+    configData["coins"] = GlobalState::coins;
+    configData["centerLv"] = GlobalState::centerLevel;
+    configData["noteBlockLv"] = GlobalState::noteBlockLevel;
+    configData["noteValue"] = GlobalState::noteValue;
+    configFile.write(QJsonDocument(configData).toJson());
+    configFile.close();
+
+    entranceBGM->stop();
     delete ui;
 }
 
@@ -56,7 +97,7 @@ void EntranceWindow::displayText()
     mainTitle->show();
 
     QLabel* bgmText = new QLabel(this);
-    GlobalState::makeText(bgmText,"Inspiration","Eras Medium ITC",46,QColor(255,255,255),QPoint(144,699));
+    GlobalState::makeText(bgmText,"Florence","Eras Medium ITC",46,QColor(255,255,255),QPoint(144,699));
     mainTitle->show();
 }
 
@@ -70,12 +111,39 @@ void EntranceWindow::on_StartButton__clicked()
 {
     playWindow_ = new PlayWindow();
     connect(playWindow_,&PlayWindow::playWindowClosed,this,&EntranceWindow::on_PlayWindowClosed);
+    entranceBGM->stop();
     playWindow_->show();
     this->hide();
 }
 
-void EntranceWindow::on_PlayWindowClosed()
+void EntranceWindow::on_PlayWindowClosed(int c,bool finished)
 {
     this->show();
+    entranceBGM->play();
+    if (finished){
+        cgWindow_ = new Congratulation(this,c);
+        connect(cgWindow_,&Congratulation::updateFinished,this,&EntranceWindow::on_UpdateFinished);
+        cgWindow_->exec();
+    }
+}
+
+void EntranceWindow::on_UpdateFinished(int c)
+{
+    playWindow_ = new PlayWindow("",c);
+    connect(playWindow_,&PlayWindow::playWindowClosed,this,&EntranceWindow::on_PlayWindowClosed);
+    entranceBGM->stop();
+    playWindow_->show();
+    this->hide();
+}
+
+
+void EntranceWindow::on_SaveButton__clicked()
+{
+    QString archiveFileName = QFileDialog::getOpenFileName(this,"读取存档","F:/advProgramProject/Composer/files/Archives");
+    playWindow_ = new PlayWindow(archiveFileName);
+    connect(playWindow_,&PlayWindow::playWindowClosed,this,&EntranceWindow::on_PlayWindowClosed);
+    entranceBGM->stop();
+    playWindow_->show();
+    this->hide();
 }
 

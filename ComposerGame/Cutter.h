@@ -16,6 +16,7 @@ public:
     void changeDir_(int dir);
     QPoint getPos_1(){return cutterPos_1;}
     QPoint getPos_2(){return cutterPos_2;}
+    int getLv() {return cutterLv_;}
 
     void generateNote(int noteCuttedType,int v);
 
