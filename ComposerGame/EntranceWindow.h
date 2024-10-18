@@ -12,6 +12,7 @@
 #include "GlobalState.h"
 #include "Shop.h"
 #include "PlayWindow.h"
+#include "MusicST.h"
 
 QT_BEGIN_NAMESPACE
 namespace Ui {
@@ -41,6 +42,10 @@ private slots:
 
     void on_SaveButton__clicked();
 
+    void on_MusicButton__clicked();
+
+    void on_HelpButton__clicked();
+
 private:
     void changeStyleSheet(QToolButton *btn);
     void displayText();
@@ -53,6 +58,6 @@ private:
     PlayWindow *playWindow_;
     Shop *shopWindow_;
     Congratulation *cgWindow_;
-
+    MusicST *mstWindow_;
 };
 #endif // ENTRANCEWINDOW_H

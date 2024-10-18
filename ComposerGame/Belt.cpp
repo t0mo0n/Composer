@@ -16,7 +16,9 @@ QRectF Belt::boundingRect() const
 
 void Belt::paint(QPainter *painter, const QStyleOptionGraphicsItem *op, QWidget *widget)
 {
+    painter->setOpacity(0.7);
     painter->drawPixmap(boundingRect(),beltPix,beltPix.rect());
+    painter->setOpacity(1.0);
 }
 
 void Belt::deleteBelt()
@@ -31,44 +33,44 @@ void Belt::changeDir_(int dir)
 
     switch (beltDir_) {
     case LeftToRight:
-        beltPix.load(":/img/resource/Belt_LeftToRight.png");
+        beltPix.load(":/img/resource/LR.png");
         break;
     case UpToDown:
-        beltPix.load(":/img/resource/Belt_UpToDown.png");
+        beltPix.load(":/img/resource/UD.png");
         break;
     case RightToLeft:
-        beltPix.load(":/img/resource/Belt_RightToLeft.png");
+        beltPix.load(":/img/resource/RL.png");
         break;
     case DownToUp:
-        beltPix.load(":/img/resource/Belt_DownToUp.png");
+        beltPix.load(":/img/resource/DU.png");
         break;
     case DownToRight:
-        beltPix.load(":/img/resource/Belt_DownToRight.png");
+        beltPix.load(":/img/resource/DR.png");
         break;
     case DownToLeft:
-        beltPix.load(":/img/resource/Belt_DownToLeft.png");    
+        beltPix.load(":/img/resource/DL.png");
         break;
     case LeftToDown:
-        beltPix.load(":/img/resource/Belt_LeftToDown.png");    
+        beltPix.load(":/img/resource/LD.png");
         break;
     case LeftToUp:
-        beltPix.load(":/img/resource/Belt_LeftToUp.png");
+        beltPix.load(":/img/resource/LU.png");
         break;
     case UpToLeft:
-        beltPix.load(":/img/resource/Belt_UpToLeft.png");
+        beltPix.load(":/img/resource/UL.png");
         break;
     case UpToRight:
-        beltPix.load(":/img/resource/Belt_UpToRight.png");      
+        beltPix.load(":/img/resource/UR.png");
         break;
     case RightToUp:
-        beltPix.load(":/img/resource/Belt_RightToUp.png");
+        beltPix.load(":/img/resource/RU.png");
         break;
     case RightToDown:
-        beltPix.load(":/img/resource/Belt_RightToDown.png");
+        beltPix.load(":/img/resource/RD.png");
         break;
     default:
         // LeftToRight
-        beltPix.load(":/img/resource/Belt_LeftToRight.png");
+        beltPix.load(":/img/resource/LR.png");
         break;
     }
 

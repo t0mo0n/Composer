@@ -90,5 +90,30 @@
         <file>resource/Center_Chap1.svg</file>
         <file>resource/Center_Chap2.svg</file>
         <file>resource/Center_Chap3.svg</file>
+        <file>resource/musicST_BG.png</file>
+        <file>resource/DL.png</file>
+        <file>resource/DR.png</file>
+        <file>resource/DU.png</file>
+        <file>resource/Empty.mp3</file>
+        <file>resource/Fa.m4a</file>
+        <file>resource/Florence.mp3</file>
+        <file>resource/If-I-Can-Stop-One-Heart-From-Breaking.mp3</file>
+        <file>resource/La.m4a</file>
+        <file>resource/LD.png</file>
+        <file>resource/LR.png</file>
+        <file>resource/LU.png</file>
+        <file>resource/Mi.m4a</file>
+        <file>resource/My-love.mp3</file>
+        <file>resource/RD.png</file>
+        <file>resource/Re.m4a</file>
+        <file>resource/RL.png</file>
+        <file>resource/Rondo-Alla-Turca-piano-sonata-no.mp3</file>
+        <file>resource/RU.png</file>
+        <file>resource/Si.m4a</file>
+        <file>resource/Sol.m4a</file>
+        <file>resource/The-seasons-November-Troika.mp3</file>
+        <file>resource/UD.png</file>
+        <file>resource/UL.png</file>
+        <file>resource/UR.png</file>
     </qresource>
 </RCC>

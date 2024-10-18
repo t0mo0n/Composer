@@ -656,7 +656,7 @@ void PlayWindow::closeEvent(QCloseEvent *event)
     }
     speedSwitchers_.clear();
 
-    // 下面这段代码很可能有问题
+    // 下面这段代码可能有问题
     // for (int i = notes_.size() - 1; i >= 0; --i) {
     //     auto note = notes_[i];
     //     if (note) {
@@ -1645,9 +1645,13 @@ void PlayWindow::on_MuteBtn__clicked()
 
 void PlayWindow::on_SaveBtn__clicked()
 {
-    // QString appDir = QCoreApplication::applicationDirPath();
-    // QString targetPath = appDir + "/../files/Archives/save-your-archive.json";
-    QString saveFileName = QFileDialog::getSaveFileName(this, "存档", "F:/advProgramProject/Composer/files/Archives/save-your-archive.json");
-    saveGame(saveFileName);
+    QString saveFileName = QFileDialog::getSaveFileName(this, "存档", "files/Archives/save-your-archive.json");
+    if (!saveFileName.isEmpty()) saveGame(saveFileName);
+}
+
+
+void PlayWindow::on_HelpBtn__clicked()
+{
+    // todo
 }
 

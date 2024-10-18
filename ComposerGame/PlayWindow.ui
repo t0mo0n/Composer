@@ -191,7 +191,7 @@
    </property>
    <property name="icon">
     <iconset resource="res.qrc">
-     <normaloff>:/img/resource/Belt_RightToLeft.png</normaloff>:/img/resource/Belt_RightToLeft.png</iconset>
+     <normaloff>:/img/resource/Belt_LeftToRight.png</normaloff>:/img/resource/Belt_LeftToRight.png</iconset>
    </property>
    <property name="iconSize">
     <size>
@@ -312,12 +312,12 @@
    </property>
    <property name="icon">
     <iconset resource="res.qrc">
-     <normaloff>:/img/resource/sound_on.png</normaloff>:/img/resource/sound_on.png</iconset>
+     <normaloff>:/img/resource/Play.png</normaloff>:/img/resource/Play.png</iconset>
    </property>
    <property name="iconSize">
     <size>
-     <width>36</width>
-     <height>36</height>
+     <width>38</width>
+     <height>38</height>
     </size>
    </property>
   </widget>

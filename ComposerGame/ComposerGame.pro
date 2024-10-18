@@ -18,6 +18,7 @@ SOURCES += \
     Cutter.cpp \
     GlobalState.cpp \
     Infomation.cpp \
+    MusicST.cpp \
     Note.cpp \
     PlayWindow.cpp \
     Shop.cpp \
@@ -36,6 +37,7 @@ HEADERS += \
     EntranceWindow.h \
     GlobalState.h \
     Infomation.h \
+    MusicST.h \
     MyObjectPool.h \
     Note.h \
     PlayWindow.h \
@@ -45,6 +47,7 @@ HEADERS += \
 FORMS += \
     Congratulation.ui \
     EntranceWindow.ui \
+    MusicST.ui \
     PlayWindow.ui \
     Shop.ui
 

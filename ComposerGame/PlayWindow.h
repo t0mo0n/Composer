@@ -92,6 +92,8 @@ private slots:
 
     void on_SaveBtn__clicked();
 
+    void on_HelpBtn__clicked();
+
 private:
     void changeStyleSheet(QToolButton *btn);
     void initMap(const QString &archiveFileName = "");
