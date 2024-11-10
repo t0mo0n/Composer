@@ -77,9 +77,9 @@ void Cutter::generateNote(int noteCuttedType,int v)
     noteToCutType = noteCuttedType;
     noteInitSpeed = v;
     if (cutterLv_ == 2){
-        generateTimer->start(1500);
+        generateTimer->start(1200);
     } else{
-        generateTimer->start(3000);
+        generateTimer->start(2400);
     }
 }
 

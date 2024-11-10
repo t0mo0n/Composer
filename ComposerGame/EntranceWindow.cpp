@@ -22,7 +22,8 @@ EntranceWindow::EntranceWindow(QWidget *parent)
     this->setFixedSize(EW_WIDTH,EW_HEIGHT);
 
     globalState_ = GlobalState(); // 初始化全局状态
-    QFile configFile("F:/advProgramProject/Composer/files/configFile.json");
+    // QFile configFile("files/configFile.json"); // 打包时使用
+    QFile configFile("F:/advProgramProject/Composer/files/configFile.json"); // 测试使用
     if(!configFile.open(QIODevice::ReadOnly)){
         qWarning("全局配置文件无法打开，请确认配置文件是否存在");
     } else{
@@ -57,7 +58,8 @@ EntranceWindow::EntranceWindow(QWidget *parent)
 
 EntranceWindow::~EntranceWindow()
 {
-    QFile configFile("F:/advProgramProject/Composer/files/configFile.json");
+    // QFile configFile("files/configFile.json"); // 打包时使用
+    QFile configFile("F:/advProgramProject/Composer/files/configFile.json"); // 测试使用
     if(!configFile.open(QIODevice::WriteOnly)){
         qWarning("全局配置文件无法打开，请确认配置文件是否存在");
         return;
@@ -97,7 +99,7 @@ void EntranceWindow::displayText()
     mainTitle->show();
 
     QLabel* bgmText = new QLabel(this);
-    GlobalState::makeText(bgmText,"Florence","Eras Medium ITC",46,QColor(255,255,255),QPoint(144,699));
+    GlobalState::makeText(bgmText,"Arabesque-No1","Eras Medium ITC",46,QColor(255,255,255),QPoint(144,699));
     mainTitle->show();
 }
 
@@ -139,11 +141,28 @@ void EntranceWindow::on_UpdateFinished(int c)
 
 void EntranceWindow::on_SaveButton__clicked()
 {
-    QString archiveFileName = QFileDialog::getOpenFileName(this,"读取存档","F:/advProgramProject/Composer/files/Archives");
-    playWindow_ = new PlayWindow(archiveFileName);
-    connect(playWindow_,&PlayWindow::playWindowClosed,this,&EntranceWindow::on_PlayWindowClosed);
+    QString archiveFileName = QFileDialog::getOpenFileName(this,"读取存档","files/Archives");
+    if (!archiveFileName.isEmpty()){
+        playWindow_ = new PlayWindow(archiveFileName);
+        connect(playWindow_,&PlayWindow::playWindowClosed,this,&EntranceWindow::on_PlayWindowClosed);
+        entranceBGM->stop();
+        playWindow_->show();
+        this->hide();
+    }
+}
+
+
+void EntranceWindow::on_MusicButton__clicked()
+{
+    mstWindow_ = new MusicST();
     entranceBGM->stop();
-    playWindow_->show();
-    this->hide();
+    connect(mstWindow_,&MusicST::mstWindowClosed,this,[this](){entranceBGM->play();});
+    mstWindow_->exec();
+}
+
+
+void EntranceWindow::on_HelpButton__clicked()
+{
+    // todo
 }
 
